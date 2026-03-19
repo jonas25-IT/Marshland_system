@@ -6,6 +6,8 @@ import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.entity.UserRole;
 import com.rugezi.marshland.security.JwtUtils;
 import com.rugezi.marshland.service.UserService;
+import com.rugezi.marshland.validator.PasswordValidator;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,8 +34,23 @@ public class AuthController {
     }
     
     @PostMapping("/register")
-    public User registerUser(@RequestBody User user) {
-        return userService.registerUser(user);
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        // Validate password strength
+        PasswordValidator.ValidationResult validation = PasswordValidator.validatePassword(user.getPasswordHash());
+        if (!validation.isValid()) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(validation.getMessage());
+        }
+        
+        try {
+            User registeredUser = userService.registerUser(user);
+            return ResponseEntity.ok(registeredUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Registration failed: " + e.getMessage());
+        }
     }
     
     @PostMapping("/login")
@@ -74,5 +91,10 @@ public class AuthController {
     @GetMapping("/roles")
     public UserRole[] getRoles() {
         return UserRole.values();
+    }
+    
+    @GetMapping("/password-requirements")
+    public String getPasswordRequirements() {
+        return PasswordValidator.getPasswordRequirements();
     }
 }
