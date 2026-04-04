@@ -74,4 +74,37 @@ public class VisitDateService {
     public boolean existsByVisitDate(LocalDate date) {
         return visitDateRepository.existsByVisitDate(date);
     }
+    
+    // RBAC specific methods
+    public List<VisitDate> getAvailableDates(LocalDate startDate, LocalDate endDate) {
+        return visitDateRepository.findByVisitDateBetweenOrderByVisitDate(startDate, endDate)
+                .stream()
+                .filter(vd -> vd.getRemainingCapacity() > 0)
+                .toList();
+    }
+    
+    public Integer getTotalCapacity(LocalDate startDate, LocalDate endDate) {
+        return visitDateRepository.findByVisitDateBetweenOrderByVisitDate(startDate, endDate)
+                .stream()
+                .mapToInt(VisitDate::getMaxCapacity)
+                .sum();
+    }
+    
+    public Integer getBookedCapacity(LocalDate startDate, LocalDate endDate) {
+        return visitDateRepository.findByVisitDateBetweenOrderByVisitDate(startDate, endDate)
+                .stream()
+                .mapToInt(VisitDate::getCurrentBookings)
+                .sum();
+    }
+    
+    public List<VisitDate> getTodayBookings() {
+        VisitDate todayVisit = visitDateRepository.findByVisitDate(LocalDate.now());
+        return todayVisit != null ? List.of(todayVisit) : List.of();
+    }
+    
+    public List<VisitDate> getThisWeekBookings() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekEnd = today.plusDays(7);
+        return visitDateRepository.findByVisitDateBetweenOrderByVisitDate(today, weekEnd);
+    }
 }

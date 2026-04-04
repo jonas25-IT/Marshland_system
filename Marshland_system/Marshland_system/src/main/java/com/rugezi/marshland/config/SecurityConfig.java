@@ -78,14 +78,23 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> 
                     auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/species/**").permitAll() // Public access for species info
+                        .requestMatchers("/api/photos/**").permitAll() // Public access for photos
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/ecologist/**").hasAnyRole("ADMIN", "ECOLOGIST")
+                        .requestMatchers("/api/tourist/**").hasAnyRole("ADMIN", "TOURIST")
                         .requestMatchers("/api/staff/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/users/profile").authenticated()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        // Booking endpoints by role
+                        .requestMatchers("/api/bookings/create").hasAnyRole("TOURIST", "ADMIN")
+                        .requestMatchers("/api/bookings/my-bookings").hasAnyRole("TOURIST", "ADMIN")
+                        .requestMatchers("/api/bookings/approve").hasRole("ADMIN")
+                        .requestMatchers("/api/bookings/daily").hasAnyRole("ADMIN", "STAFF", "ECOLOGIST")
                         .requestMatchers("/api/bookings/**").authenticated()
+                        .requestMatchers("/api/feedback/create").hasAnyRole("TOURIST", "ADMIN")
                         .requestMatchers("/api/feedback/**").authenticated()
                         .requestMatchers("/api/visit-dates/**").authenticated()
+                        .requestMatchers("/api/analytics/**").hasAnyRole("ADMIN", "ECOLOGIST")
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers

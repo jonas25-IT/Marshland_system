@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -69,22 +71,6 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
     
-    public void cancelBooking(Long bookingId, User user) {
-        Booking booking = getBookingById(bookingId);
-        
-        if (!booking.getUser().getUserId().equals(user.getUserId())) {
-            throw new RuntimeException("You can only cancel your own bookings");
-        }
-        
-        if (booking.getBookingStatus() == BookingStatus.APPROVED) {
-            VisitDate visitDate = booking.getVisitDate();
-            visitDate.setCurrentBookings(visitDate.getCurrentBookings() - booking.getNumberOfVisitors());
-            visitDateRepository.save(visitDate);
-        }
-        
-        bookingRepository.delete(booking);
-    }
-    
     public Optional<Booking> findById(Long id) {
         return bookingRepository.findById(id);
     }
@@ -136,5 +122,154 @@ public class BookingService {
     
     public List<Booking> findApprovedBookings() {
         return bookingRepository.findByBookingStatus(BookingStatus.APPROVED);
+    }
+    
+    // RBAC specific methods
+    public List<Booking> getBookingsByUser(User user) {
+        return bookingRepository.findByUser(user);
+    }
+    
+    public List<Booking> getUpcomingBookingsForUser(User user) {
+        return bookingRepository.findUpcomingApprovedBookings(user, LocalDate.now());
+    }
+    
+    public List<Booking> getPastBookingsForUser(User user) {
+        return bookingRepository.findAll().stream()
+                .filter(b -> b.getUser().getUserId().equals(user.getUserId()))
+                .filter(b -> b.getVisitDate().getVisitDate().isBefore(LocalDate.now()))
+                .toList();
+    }
+    
+    public void cancelBooking(Long bookingId, User user) {
+        Booking booking = getBookingById(bookingId);
+        if (!booking.getUser().getUserId().equals(user.getUserId())) {
+            throw new RuntimeException("You can only cancel your own bookings");
+        }
+        if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
+            throw new RuntimeException("Booking is already cancelled");
+        }
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+    }
+    
+    public List<Booking> getPendingBookings() {
+        return bookingRepository.findByStatusAndFutureDate(BookingStatus.PENDING, LocalDate.now());
+    }
+    
+    public long getPendingBookingsCount() {
+        return bookingRepository.findByBookingStatus(BookingStatus.PENDING).size();
+    }
+    
+    public List<Booking> getRecentBookings(int limit) {
+        return bookingRepository.findAll().stream()
+                .sorted((b1, b2) -> b2.getCreatedAt().compareTo(b1.getCreatedAt()))
+                .limit(limit)
+                .toList();
+    }
+    
+    public long getTotalBookingsCount() {
+        return bookingRepository.count();
+    }
+    
+    public List<Booking> getBookingsByDate(LocalDate date) {
+        return bookingRepository.findByVisitDate(date);
+    }
+    
+    public List<Booking> getCheckedInBookings(LocalDate date) {
+        return bookingRepository.findByVisitDate(date).stream()
+                .filter(b -> b.getBookingStatus() == BookingStatus.APPROVED)
+                .toList();
+    }
+    
+    public List<Booking> getPendingBookingsForDate(LocalDate date) {
+        return bookingRepository.findByVisitDate(date).stream()
+                .filter(b -> b.getBookingStatus() == BookingStatus.APPROVED)
+                .toList();
+    }
+    
+    public List<Booking> getBookingsThisWeek() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
+        LocalDate weekEnd = weekStart.plusDays(6);
+        return bookingRepository.findByDateRange(weekStart, weekEnd);
+    }
+    
+    public List<Booking> getRecentCheckins(int limit) {
+        return bookingRepository.findAll().stream()
+                .filter(b -> b.getBookingStatus() == BookingStatus.APPROVED)
+                .sorted((b1, b2) -> b2.getCreatedAt().compareTo(b1.getCreatedAt()))
+                .limit(limit)
+                .toList();
+    }
+    
+    public void checkInBooking(Long bookingId, User staff, String notes) {
+        Booking booking = getBookingById(bookingId);
+        booking.setBookingStatus(BookingStatus.APPROVED);
+        bookingRepository.save(booking);
+    }
+    
+    public void checkOutBooking(Long bookingId, User staff, String notes) {
+        Booking booking = getBookingById(bookingId);
+        booking.setBookingStatus(BookingStatus.APPROVED);
+        bookingRepository.save(booking);
+    }
+    
+    public List<Booking> getCheckedOutBookings(LocalDate date) {
+        return bookingRepository.findByVisitDate(date).stream()
+                .filter(b -> b.getBookingStatus() == BookingStatus.APPROVED)
+                .toList();
+    }
+    
+    public List<Booking> getCancelledBookings(LocalDate date) {
+        return bookingRepository.findByVisitDate(date).stream()
+                .filter(b -> b.getBookingStatus() == BookingStatus.CANCELLED)
+                .toList();
+    }
+    
+    public List<Booking> getNoShows(LocalDate date) {
+        return bookingRepository.findByVisitDate(date).stream()
+                .filter(b -> b.getBookingStatus() == BookingStatus.CANCELLED)
+                .toList();
+    }
+    
+    public double getAverageDailyBookingsThisWeek() {
+        List<Booking> weekBookings = getBookingsThisWeek();
+        return weekBookings.size() / 7.0;
+    }
+    
+    public void addVisitNote(Long bookingId, User staff, String note) {
+        Booking booking = getBookingById(bookingId);
+        // This would ideally be stored in a separate notes table
+        bookingRepository.save(booking);
+    }
+    
+    public User updateUserProfile(User user, Map<String, String> profileData) {
+        // Update user profile fields
+        if (profileData.containsKey("firstName")) {
+            user.setFirstName(profileData.get("firstName"));
+        }
+        if (profileData.containsKey("lastName")) {
+            user.setLastName(profileData.get("lastName"));
+        }
+        if (profileData.containsKey("phone")) {
+            user.setPhone(profileData.get("phone"));
+        }
+        return user; // This would be saved by UserService
+    }
+    
+    public List<VisitDate> getAvailableVisitDates() {
+        return visitDateRepository.findAll().stream()
+                .filter(vd -> vd.getDate().isAfter(LocalDate.now()) && vd.hasAvailableCapacity(1))
+                .toList();
+    }
+    
+    public Map<String, Object> getBookingStatistics() {
+        Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("total", getTotalBookingsCount());
+        stats.put("pending", getPendingBookingsCount());
+        stats.put("approved", bookingRepository.findByBookingStatus(BookingStatus.APPROVED).size());
+        stats.put("cancelled", bookingRepository.findByBookingStatus(BookingStatus.CANCELLED).size());
+        stats.put("completed", bookingRepository.findByBookingStatus(BookingStatus.APPROVED).size());
+        return stats;
     }
 }

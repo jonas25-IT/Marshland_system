@@ -54,4 +54,16 @@ public class Feedback {
     
     public LocalDateTime getSubmittedAt() { return submittedAt; }
     public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
+    
+    // Convenience method to get user from booking
+    public User getUser() {
+        return booking != null ? booking.getUser() : null;
+    }
+    
+    // Convenience method to set user through booking
+    public void setUser(User user) {
+        if (booking != null) {
+            booking.setUser(user);
+        }
+    }
 }

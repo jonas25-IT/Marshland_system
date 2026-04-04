@@ -2,6 +2,7 @@ package com.rugezi.marshland.service;
 
 import com.rugezi.marshland.entity.Booking;
 import com.rugezi.marshland.entity.Feedback;
+import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.repository.BookingRepository;
 import com.rugezi.marshland.repository.FeedbackRepository;
 import org.springframework.stereotype.Service;
@@ -74,5 +75,22 @@ public class FeedbackService {
             throw new RuntimeException("Feedback not found with id: " + id);
         }
         feedbackRepository.deleteById(id);
+    }
+    
+    // RBAC specific methods
+    public Feedback createFeedback(Feedback feedback) {
+        return feedbackRepository.save(feedback);
+    }
+    
+    public List<Feedback> getFeedbackByUser(User user) {
+        return feedbackRepository.findAll().stream()
+                .filter(f -> f.getUser() != null && f.getUser().getUserId().equals(user.getUserId()))
+                .toList();
+    }
+    
+    public List<Feedback> getFeedbackByUser(User user, int limit) {
+        return getFeedbackByUser(user).stream()
+                .limit(limit)
+                .toList();
     }
 }

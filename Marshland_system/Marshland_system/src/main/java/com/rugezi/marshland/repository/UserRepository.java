@@ -4,8 +4,10 @@ import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.entity.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,4 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role AND u.isActive = true")
     long countActiveUsersByRole(UserRole role);
+    
+    @Query("SELECT COUNT(u) FROM User u WHERE u.registrationDate > :date")
+    long countByRegistrationDateAfter(@Param("date") LocalDateTime date);
 }

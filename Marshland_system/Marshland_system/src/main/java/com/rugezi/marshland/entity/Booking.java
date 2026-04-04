@@ -1,6 +1,7 @@
 package com.rugezi.marshland.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -25,6 +26,9 @@ public class Booking {
     @JoinColumn(name = "date_id", nullable = false)
     private VisitDate visitDate;
     
+    @Min(value = 1, message = "At least 1 visitor is required")
+    @Max(value = 20, message = "Maximum 20 visitors allowed per booking")
+    @NotNull(message = "Number of visitors is required")
     @Column(name = "number_of_visitors", nullable = false)
     private Integer numberOfVisitors;
     
@@ -82,6 +86,9 @@ public class Booking {
     
     public LocalDateTime getApprovalDate() { return approvalDate; }
     public void setApprovalDate(LocalDateTime approvalDate) { this.approvalDate = approvalDate; }
+    
+    // Alias for bookingDate to match controller expectations
+    public LocalDateTime getCreatedAt() { return bookingDate; }
     
     public void approve(User admin) {
         this.bookingStatus = BookingStatus.APPROVED;

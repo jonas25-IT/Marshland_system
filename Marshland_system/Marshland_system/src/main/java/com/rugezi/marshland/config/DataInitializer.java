@@ -29,9 +29,11 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        // Enable data initialization for testing
         initializeUsers();
         initializeSpecies();
         initializeVisitDates();
+        System.out.println("Data initialization completed successfully");
     }
 
     private void initializeUsers() {
@@ -94,6 +96,7 @@ public class DataInitializer implements CommandLineRunner {
             papyrus.setConservationStatus("Least Concern");
             papyrus.setDescription("A tall aquatic sedge that forms dense stands in wetlands.");
             papyrus.setHabitat("Marsh edges and shallow water");
+            papyrus.setImageUrl("https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80");
             speciesService.createSpecies(papyrus, ecologist);
         }
 
@@ -105,6 +108,7 @@ public class DataInitializer implements CommandLineRunner {
             reed.setConservationStatus("Least Concern");
             reed.setDescription("A widespread perennial grass found in wetlands.");
             reed.setHabitat("Marsh margins and shallow waters");
+            reed.setImageUrl("https://images.unsplash.com/photo-1528722828814-77b9b83aafb2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80");
             speciesService.createSpecies(reed, ecologist);
         }
 
@@ -116,6 +120,7 @@ public class DataInitializer implements CommandLineRunner {
             crane.setConservationStatus("Endangered");
             crane.setDescription("An iconic bird with a golden crown.");
             crane.setHabitat("Wetland edges and grasslands");
+            crane.setImageUrl("https://images.unsplash.com/photo-1552728089-a57d840b9b4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80");
             speciesService.createSpecies(crane, ecologist);
         }
 
@@ -127,6 +132,7 @@ public class DataInitializer implements CommandLineRunner {
             heron.setConservationStatus("Least Concern");
             heron.setDescription("A large wading bird commonly found in wetlands.");
             heron.setHabitat("Shallow waters and marsh edges");
+            heron.setImageUrl("https://images.unsplash.com/photo-1558592672-0540e816f8e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80");
             speciesService.createSpecies(heron, ecologist);
         }
     }

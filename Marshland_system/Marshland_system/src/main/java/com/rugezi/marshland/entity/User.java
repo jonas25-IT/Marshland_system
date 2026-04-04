@@ -1,5 +1,7 @@
 package com.rugezi.marshland.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -10,7 +12,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Entity
-@Table(name = "user")
+@Table(name = "app_user")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User implements UserDetails {
     
     @Id
@@ -101,6 +104,11 @@ public class User implements UserDetails {
     
     public String getFullName() {
         return firstName + " " + lastName;
+    }
+    
+    // Alias for registrationDate to match controller expectations
+    public LocalDateTime getCreatedAt() {
+        return registrationDate;
     }
 
     // UserDetails Implementation

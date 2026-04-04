@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -95,6 +97,20 @@ public class UserService implements UserDetailsService {
     public List<User> findByRole(UserRole role) {
         return userRepository.findByRole(role);
     }
+    
+    public User createUser(User user) {
+        // Check if email already exists
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new RuntimeException("Email already exists: " + user.getEmail());
+        }
+        
+        // Set default values
+        user.setIsActive(true);
+        user.setRegistrationDate(LocalDateTime.now());
+        user.setLastUpdated(LocalDateTime.now());
+        
+        return userRepository.save(user);
+    }
 
     public Page<User> findAll(Pageable pageable) {
         return userRepository.findAll(pageable);
@@ -149,6 +165,47 @@ public class UserService implements UserDetailsService {
         }
 
         userRepository.deleteById(id);
+    }
+
+    // RBAC specific methods
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public long getTotalUsersCount() {
+        return userRepository.count();
+    }
+
+    public List<User> getRecentUsers(int limit) {
+        return userRepository.findAll().stream()
+                .sorted((u1, u2) -> u2.getRegistrationDate().compareTo(u1.getRegistrationDate()))
+                .limit(limit)
+                .toList();
+    }
+
+    public User approveUser(Long userId) {
+        User user = findById(userId);
+        user.setIsActive(true);
+        return userRepository.save(user);
+    }
+
+    public User rejectUser(Long userId) {
+        User user = findById(userId);
+        user.setIsActive(false);
+        return userRepository.save(user);
+    }
+
+    public Map<String, Object> getUserStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", getTotalUsersCount());
+        stats.put("active", userRepository.findAll().stream().mapToLong(u -> u.getIsActive() ? 1 : 0).sum());
+        stats.put("byRole", Map.of(
+            "ADMIN", countActiveUsersByRole(UserRole.ADMIN),
+            "ECOLOGIST", countActiveUsersByRole(UserRole.ECOLOGIST),
+            "TOURIST", countActiveUsersByRole(UserRole.TOURIST),
+            "STAFF", countActiveUsersByRole(UserRole.STAFF)
+        ));
+        return stats;
     }
 
     public User getCurrentUser() {

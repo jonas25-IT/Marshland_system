@@ -4,6 +4,7 @@ import com.rugezi.marshland.entity.Booking;
 import com.rugezi.marshland.entity.BookingStatus;
 import com.rugezi.marshland.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,7 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
     
     List<Booking> findByUser(User user);
     
@@ -38,4 +39,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     @Query("SELECT b FROM Booking b WHERE b.user.userId = :userId AND b.bookingStatus = :status")
     List<Booking> findByUserIdAndStatus(@Param("userId") Long userId, @Param("status") BookingStatus status);
+
+    List<Booking> findByVisitDateVisitDateBetween(LocalDate startDate, LocalDate endDate);
+    
+    @Query("SELECT b FROM Booking b ORDER BY b.bookingDate DESC")
+    List<Booking> findTop10ByOrderByBookingDateDesc();
+    
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.bookingStatus = :status")
+    long countByBookingStatus(@Param("status") BookingStatus status);
+    
+    @Query("SELECT b FROM Booking b ORDER BY b.bookingDate DESC LIMIT 200")
+    List<Booking> findTop200ByOrderByBookingDateDesc();
+
+    List<Booking> findTop100ByOrderByBookingDateDesc();
+
+    List<Booking> findByVisitDateVisitDate(LocalDate today);
 }
