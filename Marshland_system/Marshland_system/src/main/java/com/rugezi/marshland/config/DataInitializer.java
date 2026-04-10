@@ -37,13 +37,13 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeUsers() {
-
+        // Create users in user table since app_user was deleted
         if (userService.findByEmail("admin@rugezi.rw").isEmpty()) {
             User admin = new User();
             admin.setEmail("admin@rugezi.rw");
-            admin.setPasswordHash("admin123");  // Set passwordHash directly (will be encoded)
+            admin.setPasswordHash("admin123");
             admin.setFirstName("Admin");
-            admin.setLastName("User");
+            admin.setLastName("Jonas");
             admin.setRole(UserRole.ADMIN);
             admin.setPhone("+250788123456");
             userService.registerUser(admin);

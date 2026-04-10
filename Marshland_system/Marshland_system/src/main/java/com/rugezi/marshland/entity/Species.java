@@ -1,6 +1,8 @@
 package com.rugezi.marshland.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -43,6 +45,7 @@ public class Species {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
+    @JsonIgnore
     private User createdBy;
     
     @CreatedDate
@@ -90,6 +93,11 @@ public class Species {
     
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+    
+    @JsonProperty("createdBy")
+    public String getCreatorName() { 
+        return createdBy != null ? createdBy.getFirstName() + " " + createdBy.getLastName() : "Unknown"; 
+    }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
