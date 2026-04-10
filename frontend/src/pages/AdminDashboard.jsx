@@ -469,7 +469,7 @@ const AdminDashboard = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Users</h3>
                 <div className="space-y-3">
                   {dashboardData?.recentUsers?.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={`user-${user.id}-${user.email}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-semibold text-gray-800">{user.name}</p>
                         <p className="text-sm text-gray-600">{user.email}</p>
@@ -488,7 +488,7 @@ const AdminDashboard = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Bookings</h3>
                 <div className="space-y-3">
                   {dashboardData?.recentBookings?.map((booking) => (
-                    <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={`booking-${booking.id}-${booking.user}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-semibold text-gray-800">{booking.user}</p>
                         <p className="text-sm text-gray-600">{booking.visitDate} • {booking.numberOfVisitors} visitors</p>

@@ -102,9 +102,9 @@ const EcologistDashboard = () => {
       
       // Mock species data
       setSpecies([
-        { speciesId: 1, scientificName: 'Ardea cinerea', commonName: 'Grey Heron', type: 'BIRD', conservationStatus: 'Least Concern', description: 'Large wading bird', createdBy: 'Dr. Jane Smith', dateAdded: '2024-03-28' },
-        { speciesId: 2, scientificName: 'Nymphaea lotus', commonName: 'Egyptian Water Lily', type: 'PLANT', conservationStatus: 'Least Concern', description: 'Aquatic flowering plant', createdBy: 'Dr. John Doe', dateAdded: '2024-03-27' },
-        { speciesId: 3, scientificName: 'Hippopotamus amphibius', commonName: 'Hippopotamus', type: 'MAMMAL', conservationStatus: 'Vulnerable', description: 'Large semi-aquatic mammal', createdBy: 'Dr. Jane Smith', dateAdded: '2024-03-26' },
+        { speciesId: 1, scientificName: 'Ardea cinerea', commonName: 'Grey Heron', type: 'BIRD', conservationStatus: 'Least Concern', description: 'Large wading bird', creatorName: 'Dr. Jane Smith', dateAdded: '2024-03-28' },
+        { speciesId: 2, scientificName: 'Nymphaea lotus', commonName: 'Egyptian Water Lily', type: 'PLANT', conservationStatus: 'Least Concern', description: 'Aquatic flowering plant', creatorName: 'Dr. John Doe', dateAdded: '2024-03-27' },
+        { speciesId: 3, scientificName: 'Hippopotamus amphibius', commonName: 'Hippopotamus', type: 'MAMMAL', conservationStatus: 'Vulnerable', description: 'Large semi-aquatic mammal', creatorName: 'Dr. Jane Smith', dateAdded: '2024-03-26' },
       ]);
     } finally {
       setLoading(false);
