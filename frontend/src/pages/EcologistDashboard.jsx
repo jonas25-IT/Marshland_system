@@ -25,6 +25,7 @@ import {
   Image
 } from 'lucide-react';
 import GalleryManagement from '../components/GalleryManagement';
+import FeedbackList from '../components/FeedbackList';
 
 const EcologistDashboard = () => {
   const { user, logout, api } = useAuth();
@@ -37,6 +38,9 @@ const EcologistDashboard = () => {
   const [species, setSpecies] = useState([]);
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
   const [editingSpecies, setEditingSpecies] = useState(null);
+  
+  // Feedback state
+  const [feedback, setFeedback] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -58,6 +62,15 @@ const EcologistDashboard = () => {
       const speciesResponse = await api.get('/species');
       console.log('Species API response:', speciesResponse);
       setSpecies(speciesResponse.data);
+      
+      // Load feedback data
+      try {
+        const feedbackResponse = await api.get('/feedback');
+        setFeedback(feedbackResponse.data);
+      } catch (feedbackError) {
+        console.error('Failed to load feedback:', feedbackError);
+        setFeedback([]);
+      }
       
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -391,6 +404,16 @@ const EcologistDashboard = () => {
             >
               Reports
             </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'feedback'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Visitor Feedback
+            </button>
           </div>
 
           {/* Tab Content */}
@@ -624,6 +647,22 @@ const EcologistDashboard = () => {
                   <button className="btn-primary w-full">Generate Report</button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'feedback' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Visitor Feedback</h3>
+                <div className="text-sm text-gray-600">
+                  Total Feedback: {feedback.length}
+                </div>
+              </div>
+              <FeedbackList 
+                feedbacks={feedback} 
+                loading={loading}
+                showUser={true}
+              />
             </div>
           )}
         </section>

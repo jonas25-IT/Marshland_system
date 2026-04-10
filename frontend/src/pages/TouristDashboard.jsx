@@ -25,6 +25,8 @@ import {
   Fish,
   Bug
 } from 'lucide-react';
+import FeedbackModal from '../components/FeedbackModal';
+import FeedbackList from '../components/FeedbackList';
 
 const TouristDashboard = () => {
   const { user, logout, api } = useAuth();
@@ -38,6 +40,10 @@ const TouristDashboard = () => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   
+  // Feedback state
+  const [myFeedback, setMyFeedback] = useState([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  
   // Biodiversity state
   const [species, setSpecies] = useState([]);
   const [searchSpecies, setSearchSpecies] = useState('');
@@ -48,6 +54,8 @@ const TouristDashboard = () => {
     try {
       const response = await api.get('/tourist/dashboard');
       setDashboardData(response.data);
+      setMyFeedback(response.data.myFeedback || []);
+      setFeedbackLoading(false);
       
       // Load species data for biodiversity gallery
       const speciesResponse = await api.get('/species/public');
@@ -98,11 +106,22 @@ const TouristDashboard = () => {
     try {
       await api.post(`/tourist/feedback/${selectedBooking.id}`, feedbackData);
       await loadDashboardData();
+      await loadMyFeedback();
       setShowFeedbackModal(false);
       setSelectedBooking(null);
     } catch (error) {
       console.error('Failed to submit feedback:', error);
+      throw error;
     }
+  };
+
+  const handleOpenFeedbackModal = (booking) => {
+    setSelectedBooking(booking);
+    setShowFeedbackModal(true);
+  };
+
+  const canGiveFeedback = (booking) => {
+    return booking.status === 'APPROVED' || booking.status === 'COMPLETED';
   };
 
   const handleLogout = () => {
@@ -239,7 +258,7 @@ const TouristDashboard = () => {
                     <p className="text-sm text-gray-600">{booking.visitType} • {booking.numberOfVisitors} visitors</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="flex items-center gap-3">
                   <span className={`text-sm font-medium ${
                     booking.status === 'APPROVED' ? 'text-green-600' : 
                     booking.status === 'PENDING' ? 'text-yellow-600' : 
@@ -247,6 +266,15 @@ const TouristDashboard = () => {
                   }`}>
                     {booking.status}
                   </span>
+                  {canGiveFeedback(booking) && (
+                    <button
+                      onClick={() => handleOpenFeedbackModal(booking)}
+                      className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      Feedback
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -279,7 +307,25 @@ const TouristDashboard = () => {
             ))}
           </div>
         </section>
+
+        {/* My Feedback */}
+        <section className="glass-card p-6 mb-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">My Feedback</h3>
+          <FeedbackList 
+            feedbacks={myFeedback} 
+            loading={feedbackLoading}
+            showUser={false}
+          />
+        </section>
       </main>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        booking={selectedBooking}
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        onSubmit={handleSubmitFeedback}
+      />
     </div>
   );
 };

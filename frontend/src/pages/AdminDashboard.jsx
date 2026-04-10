@@ -19,9 +19,11 @@ import {
   Check,
   X,
   Eye,
-  Image
+  Image,
+  MessageSquare
 } from 'lucide-react';
 import GalleryManagement from '../components/GalleryManagement';
+import FeedbackList from '../components/FeedbackList';
 
 const AdminDashboard = () => {
   const { user, logout, api } = useAuth();
@@ -34,6 +36,7 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [species, setSpecies] = useState([]);
+  const [feedback, setFeedback] = useState([]);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
@@ -46,15 +49,17 @@ const AdminDashboard = () => {
       setDashboardData(dashboardResponse.data);
       
       // Load all data for CRUD operations
-      const [usersResponse, bookingsResponse, speciesResponse] = await Promise.all([
+      const [usersResponse, bookingsResponse, speciesResponse, feedbackResponse] = await Promise.all([
         api.get('/admin/users'),
         api.get('/booking/all'),
-        api.get('/admin/species/all')
+        api.get('/admin/species/all'),
+        api.get('/feedback')
       ]);
       
       setUsers(usersResponse.data);
       setBookings(bookingsResponse.data);
       setSpecies(speciesResponse.data);
+      setFeedback(feedbackResponse.data);
       
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -430,6 +435,16 @@ const AdminDashboard = () => {
             >
               Gallery Management
             </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'feedback'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Feedback Management
+            </button>
           </div>
 
           {/* Tab Content */}
@@ -731,6 +746,22 @@ const AdminDashboard = () => {
           {activeTab === 'gallery' && (
             <div>
               <GalleryManagement />
+            </div>
+          )}
+
+          {activeTab === 'feedback' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Feedback Management</h3>
+                <div className="text-sm text-gray-600">
+                  Total Feedback: {feedback.length}
+                </div>
+              </div>
+              <FeedbackList 
+                feedbacks={feedback} 
+                loading={loading}
+                showUser={true}
+              />
             </div>
           )}
         </section>
