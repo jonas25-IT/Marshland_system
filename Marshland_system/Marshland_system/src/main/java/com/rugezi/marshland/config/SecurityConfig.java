@@ -78,7 +78,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> 
                     auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/species/**").permitAll() // Public access for species info
-                        .requestMatchers("/api/photos/**").permitAll() // Public access for photos
+                        .requestMatchers("/api/photos/**").permitAll() // Public access for old photos endpoint
+                        .requestMatchers("/api/gallery/photos").permitAll() // Public access to view all photos
+                        .requestMatchers("/api/gallery/photos/{photoId}").permitAll() // Public access to view photo by ID
+                        .requestMatchers("/api/gallery/photos/category/{category}").permitAll() // Public access to view photos by category
+                        .requestMatchers("/api/gallery/photos/search").permitAll() // Public access to search photos
+                        .requestMatchers("/api/gallery/photos/recent").permitAll() // Public access to recent photos
+                        .requestMatchers("/api/gallery/photos/categories").permitAll() // Public access to categories
+                        .requestMatchers("/api/gallery/files/{filename:.+}").permitAll() // Public access to serve files
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/ecologist/**").hasAnyRole("ADMIN", "ECOLOGIST")
                         .requestMatchers("/api/tourist/**").hasAnyRole("ADMIN", "TOURIST")

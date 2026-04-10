@@ -18,8 +18,10 @@ import {
   Trash2,
   Check,
   X,
-  Eye
+  Eye,
+  Image
 } from 'lucide-react';
+import GalleryManagement from '../components/GalleryManagement';
 
 const AdminDashboard = () => {
   const { user, logout, api } = useAuth();
@@ -105,15 +107,40 @@ const AdminDashboard = () => {
   };
 
   // CRUD Operations
+  const handleCreateUser = async (userData) => {
+    try {
+      await api.post('/admin/users', userData);
+      await loadDashboardData(); // Refresh dashboard stats
+      setShowUserModal(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      alert('Failed to create user: ' + error.response?.data?.error || error.message);
+    }
+  };
+
+  const handleEditUser = async (userData) => {
+    try {
+      await api.put(`/admin/users/${userData.id}`, userData);
+      await loadDashboardData(); // Refresh dashboard stats
+      setShowUserModal(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      alert('Failed to update user: ' + error.response?.data?.error || error.message);
+    }
+  };
+
   const handleApproveUser = async (userId) => {
     try {
       await api.post(`/admin/users/${userId}/approve`);
       setUsers(users.map(user => 
-        user.id === userId ? { ...user, enabled: true } : user
+        user.userId === userId ? { ...user, isActive: true } : user
       ));
       await loadDashboardData(); // Refresh dashboard stats
     } catch (error) {
       console.error('Failed to approve user:', error);
+      alert('Failed to approve user: ' + error.response?.data?.error || error.message);
     }
   };
 
@@ -121,7 +148,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         await api.delete(`/admin/users/${userId}`);
-        setUsers(users.filter(user => user.id !== userId));
+        setUsers(users.filter(user => user.userId !== userId));
         await loadDashboardData(); // Refresh dashboard stats
       } catch (error) {
         console.error('Failed to delete user:', error);
@@ -157,11 +184,74 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this species?')) {
       try {
         await api.delete(`/admin/species/${speciesId}`);
-        setSpecies(species.filter(spec => spec.id !== speciesId));
+        setSpecies(species.filter(spec => spec.speciesId !== speciesId));
         await loadDashboardData(); // Refresh dashboard stats
       } catch (error) {
         console.error('Failed to delete species:', error);
       }
+    }
+  };
+
+  // Booking CRUD Operations
+  const handleCreateBooking = async (bookingData) => {
+    try {
+      await api.post('/admin/bookings', bookingData);
+      await loadDashboardData(); // Refresh dashboard stats
+      setShowBookingModal(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Failed to create booking:', error);
+      alert('Failed to create booking: ' + error.response?.data?.error || error.message);
+    }
+  };
+
+  const handleEditBooking = async (bookingData) => {
+    try {
+      await api.put(`/admin/bookings/${bookingData.bookingId}`, bookingData);
+      await loadDashboardData(); // Refresh dashboard stats
+      setShowBookingModal(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Failed to update booking:', error);
+      alert('Failed to update booking: ' + error.response?.data?.error || error.message);
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to delete this booking?')) {
+      try {
+        await api.delete(`/admin/bookings/${bookingId}`);
+        setBookings(bookings.filter(booking => booking.bookingId !== bookingId));
+        await loadDashboardData(); // Refresh dashboard stats
+      } catch (error) {
+        console.error('Failed to delete booking:', error);
+        alert('Failed to delete booking: ' + error.response?.data?.error || error.message);
+      }
+    }
+  };
+
+  // Species CRUD Operations
+  const handleCreateSpecies = async (speciesData) => {
+    try {
+      await api.post('/admin/species/create', speciesData);
+      await loadDashboardData(); // Refresh dashboard stats
+      setShowSpeciesModal(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Failed to create species:', error);
+      alert('Failed to create species: ' + error.response?.data?.error || error.message);
+    }
+  };
+
+  const handleEditSpecies = async (speciesData) => {
+    try {
+      await api.put(`/admin/species/${speciesData.speciesId}`, speciesData);
+      await loadDashboardData(); // Refresh dashboard stats
+      setShowSpeciesModal(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Failed to update species:', error);
+      alert('Failed to update species: ' + error.response?.data?.error || error.message);
     }
   };
 
@@ -180,7 +270,11 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Leaf className="h-8 w-8 text-primary-600 mr-2" />
+              <img 
+                src="/logo.png" 
+                alt="Rugezi Marshland Logo"
+                className="h-8 w-8 text-primary-600 mr-2"
+              />
               <h1 className="text-2xl font-bold text-primary-800">Admin Dashboard</h1>
             </div>
             
@@ -326,6 +420,16 @@ const AdminDashboard = () => {
             >
               Species Management
             </button>
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'gallery'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Gallery Management
+            </button>
           </div>
 
           {/* Tab Content */}
@@ -401,10 +505,10 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {users.map((user) => (
-                      <tr key={user.id}>
+                      <tr key={user.userId}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
                             <div className="text-sm text-gray-500">{user.email}</div>
                           </div>
                         </td>
@@ -415,29 +519,35 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {user.enabled ? 'Active' : 'Inactive'}
+                            {user.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.createdAt}
+                          {user.registrationDate ? new Date(user.registrationDate).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            {!user.enabled && (
+                            {!user.isActive && (
                               <button
-                                onClick={() => handleApproveUser(user.id)}
+                                onClick={() => handleApproveUser(user.userId)}
                                 className="text-green-600 hover:text-green-900"
                               >
                                 <Check className="h-4 w-4" />
                               </button>
                             )}
-                            <button className="text-blue-600 hover:text-blue-900">
+                            <button 
+                              onClick={() => {
+                                setEditingItem({...user, id: user.userId});
+                                setShowUserModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteUser(user.userId)}
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -478,50 +588,62 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {bookings.map((booking) => (
-                      <tr key={booking.id}>
+                      <tr key={booking.bookingId}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{booking.user?.name}</div>
+                          <div className="text-sm font-medium text-gray-900">{booking.user?.firstName} {booking.user?.lastName}</div>
                           <div className="text-sm text-gray-500">{booking.user?.email}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {booking.visitDate}
+                          {booking.visitDate ? new Date(booking.visitDate).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {booking.numberOfVisitors}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {booking.visitType}
+                          {booking.specialRequests || 'None'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            booking.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 
-                            booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
-                            booking.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                            booking.bookingStatus === 'APPROVED' ? 'bg-green-100 text-green-800' : 
+                            booking.bookingStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
+                            booking.bookingStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {booking.status}
+                            {booking.bookingStatus}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            {booking.status === 'PENDING' && (
+                            {booking.bookingStatus === 'PENDING' && (
                               <>
                                 <button
-                                  onClick={() => handleApproveBooking(booking.id)}
+                                  onClick={() => handleApproveBooking(booking.bookingId)}
                                   className="text-green-600 hover:text-green-900"
                                 >
                                   <Check className="h-4 w-4" />
                                 </button>
                                 <button
-                                  onClick={() => handleRejectBooking(booking.id)}
+                                  onClick={() => handleRejectBooking(booking.bookingId)}
                                   className="text-red-600 hover:text-red-900"
                                 >
                                   <X className="h-4 w-4" />
                                 </button>
                               </>
                             )}
-                            <button className="text-blue-600 hover:text-blue-900">
-                              <Eye className="h-4 w-4" />
+                            <button 
+                              onClick={() => {
+                                setEditingItem({...booking, id: booking.bookingId});
+                                setShowBookingModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBooking(booking.bookingId)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -558,7 +680,7 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {species.map((spec) => (
-                      <tr key={spec.id}>
+                      <tr key={spec.speciesId}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {spec.scientificName}
                         </td>
@@ -581,11 +703,17 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <button className="text-blue-600 hover:text-blue-900">
+                            <button 
+                              onClick={() => {
+                                setEditingItem({...spec, id: spec.speciesId});
+                                setShowSpeciesModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteSpecies(spec.id)}
+                              onClick={() => handleDeleteSpecies(spec.speciesId)}
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -599,7 +727,367 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'gallery' && (
+            <div>
+              <GalleryManagement />
+            </div>
+          )}
         </section>
+        
+        {/* User Modal */}
+        {showUserModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3 text-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {editingItem ? 'Edit User' : 'Create New User'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setEditingItem(null);
+                  }}
+                  type="button"
+                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const userData = {
+                  firstName: formData.get('firstName'),
+                  lastName: formData.get('lastName'),
+                  email: formData.get('email'),
+                  role: formData.get('role'),
+                  password: formData.get('password'),
+                  phone: formData.get('phone')
+                };
+                
+                if (editingItem) {
+                  handleEditUser({ ...userData, id: editingItem.id });
+                } else {
+                  handleCreateUser(userData);
+                }
+              }} className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    id="firstName"
+                    defaultValue={editingItem?.firstName || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    id="lastName"
+                    defaultValue={editingItem?.lastName || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    id="email"
+                    defaultValue={editingItem?.email || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">Role</label>
+                  <select
+                    name="role"
+                    id="role"
+                    defaultValue={editingItem?.role || 'TOURIST'}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  >
+                    <option value="ADMIN">Admin</option>
+                    <option value="ECOLOGIST">Ecologist</option>
+                    <option value="TOURIST">Tourist</option>
+                    <option value="STAFF">Staff</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    id="phone"
+                    defaultValue={editingItem?.phone || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  />
+                </div>
+                {!editingItem && (
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+                    <input
+                      type="password"
+                      name="password"
+                      id="password"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      placeholder="Enter password for new user"
+                    />
+                  </div>
+                )}
+                <div className="flex justify-end space-x-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserModal(false);
+                      setEditingItem(null);
+                    }}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md"
+                  >
+                    {editingItem ? 'Update' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Booking Modal */}
+        {showBookingModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3 text-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {editingItem ? 'Edit Booking' : 'Create New Booking'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowBookingModal(false);
+                    setEditingItem(null);
+                  }}
+                  type="button"
+                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const bookingData = {
+                  numberOfVisitors: parseInt(formData.get('numberOfVisitors')),
+                  specialRequests: formData.get('specialRequests'),
+                  visitDate: formData.get('visitDate')
+                };
+                
+                if (editingItem) {
+                  handleEditBooking({ ...bookingData, bookingId: editingItem.id });
+                } else {
+                  handleCreateBooking(bookingData);
+                }
+              }} className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="numberOfVisitors" className="block text-sm font-medium text-gray-700">Number of Visitors</label>
+                  <input
+                    type="number"
+                    name="numberOfVisitors"
+                    id="numberOfVisitors"
+                    defaultValue={editingItem?.numberOfVisitors || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="visitDate" className="block text-sm font-medium text-gray-700">Visit Date</label>
+                  <input
+                    type="date"
+                    name="visitDate"
+                    id="visitDate"
+                    defaultValue={editingItem?.visitDate || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700">Special Requests</label>
+                  <textarea
+                    name="specialRequests"
+                    id="specialRequests"
+                    defaultValue={editingItem?.specialRequests || ''}
+                    rows={3}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    placeholder="Optional special requests"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBookingModal(false);
+                      setEditingItem(null);
+                    }}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md"
+                  >
+                    {editingItem ? 'Update' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Species Modal */}
+        {showSpeciesModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3 text-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {editingItem ? 'Edit Species' : 'Add New Species'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowSpeciesModal(false);
+                    setEditingItem(null);
+                  }}
+                  type="button"
+                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const speciesData = {
+                  scientificName: formData.get('scientificName'),
+                  commonName: formData.get('commonName'),
+                  type: formData.get('type'),
+                  conservationStatus: formData.get('conservationStatus'),
+                  description: formData.get('description'),
+                  habitat: formData.get('habitat')
+                };
+                
+                if (editingItem) {
+                  handleEditSpecies({ ...speciesData, speciesId: editingItem.id });
+                } else {
+                  handleCreateSpecies(speciesData);
+                }
+              }} className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="scientificName" className="block text-sm font-medium text-gray-700">Scientific Name</label>
+                  <input
+                    type="text"
+                    name="scientificName"
+                    id="scientificName"
+                    defaultValue={editingItem?.scientificName || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="commonName" className="block text-sm font-medium text-gray-700">Common Name</label>
+                  <input
+                    type="text"
+                    name="commonName"
+                    id="commonName"
+                    defaultValue={editingItem?.commonName || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="type" className="block text-sm font-medium text-gray-700">Type</label>
+                  <select
+                    name="type"
+                    id="type"
+                    defaultValue={editingItem?.type || 'FLORA'}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  >
+                    <option value="FLORA">Flora</option>
+                    <option value="FAUNA">Fauna</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="conservationStatus" className="block text-sm font-medium text-gray-700">Conservation Status</label>
+                  <select
+                    name="conservationStatus"
+                    id="conservationStatus"
+                    defaultValue={editingItem?.conservationStatus || 'Least Concern'}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    required
+                  >
+                    <option value="Least Concern">Least Concern</option>
+                    <option value="Near Threatened">Near Threatened</option>
+                    <option value="Vulnerable">Vulnerable</option>
+                    <option value="Endangered">Endangered</option>
+                    <option value="Critically Endangered">Critically Endangered</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="habitat" className="block text-sm font-medium text-gray-700">Habitat</label>
+                  <input
+                    type="text"
+                    name="habitat"
+                    id="habitat"
+                    defaultValue={editingItem?.habitat || ''}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    placeholder="e.g., Wetland, Forest, Grassland"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+                  <textarea
+                    name="description"
+                    id="description"
+                    defaultValue={editingItem?.description || ''}
+                    rows={3}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    placeholder="Brief description of the species"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSpeciesModal(false);
+                      setEditingItem(null);
+                    }}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md"
+                  >
+                    {editingItem ? 'Update' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

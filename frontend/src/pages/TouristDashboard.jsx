@@ -9,7 +9,21 @@ import {
   Plus,
   Camera,
   Star,
-  Clock
+  Clock,
+  MapPin,
+  Search,
+  Filter,
+  Heart,
+  MessageSquare,
+  Eye,
+  Info,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Bird,
+  Trees,
+  Fish,
+  Bug
 } from 'lucide-react';
 
 const TouristDashboard = () => {
@@ -17,11 +31,27 @@ const TouristDashboard = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  // Booking state
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  
+  // Biodiversity state
+  const [species, setSpecies] = useState([]);
+  const [searchSpecies, setSearchSpecies] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [selectedSpecies, setSelectedSpecies] = useState(null);
 
   const loadDashboardData = useCallback(async () => {
     try {
       const response = await api.get('/tourist/dashboard');
       setDashboardData(response.data);
+      
+      // Load species data for biodiversity gallery
+      const speciesResponse = await api.get('/species/public');
+      setSpecies(speciesResponse.data);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       // Set mock data as fallback
@@ -41,19 +71,48 @@ const TouristDashboard = () => {
           { id: 3, date: '2024-04-04', availableSpots: 5, maxCapacity: 15 },
         ]
       });
+      
+      // Mock species data
+      setSpecies([
+        { id: 1, scientificName: 'Ardea cinerea', commonName: 'Grey Heron', type: 'BIRD', conservationStatus: 'Least Concern', imageUrl: '/images/grey-heron.jpg', description: 'Large wading bird found in wetlands' },
+        { id: 2, scientificName: 'Nymphaea lotus', commonName: 'Egyptian Water Lily', type: 'PLANT', conservationStatus: 'Least Concern', imageUrl: '/images/water-lily.jpg', description: 'Beautiful aquatic flowering plant' },
+        { id: 3, scientificName: 'Hippopotamus amphibius', commonName: 'Hippopotamus', type: 'MAMMAL', conservationStatus: 'Vulnerable', imageUrl: '/images/hippo.jpg', description: 'Large semi-aquatic mammal' },
+      ]);
     } finally {
       setLoading(false);
     }
   }, [api]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  // Booking functions
+  const handleCreateBooking = async (bookingData) => {
+    try {
+      const response = await api.post('/tourist/bookings/create', bookingData);
+      await loadDashboardData();
+      setShowBookingModal(false);
+    } catch (error) {
+      console.error('Failed to create booking:', error);
+    }
+  };
+
+  const handleSubmitFeedback = async (feedbackData) => {
+    try {
+      await api.post(`/tourist/feedback/${selectedBooking.id}`, feedbackData);
+      await loadDashboardData();
+      setShowFeedbackModal(false);
+      setSelectedBooking(null);
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+    }
+  };
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   if (loading) {
     return (

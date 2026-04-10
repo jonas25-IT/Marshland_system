@@ -3,10 +3,14 @@ package com.rugezi.marshland.controller;
 import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.entity.Booking;
 import com.rugezi.marshland.entity.Species;
+import com.rugezi.marshland.entity.VisitDate;
+import com.rugezi.marshland.entity.GalleryPhoto;
 import com.rugezi.marshland.service.UserService;
 import com.rugezi.marshland.service.BookingService;
 import com.rugezi.marshland.service.SpeciesService;
+import com.rugezi.marshland.service.GalleryPhotoService;
 import com.rugezi.marshland.service.analytics.AnalyticsService;
+import com.rugezi.marshland.repository.VisitDateRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -27,13 +31,18 @@ public class AdminController {
     private final BookingService bookingService;
     private final SpeciesService speciesService;
     private final AnalyticsService analyticsService;
+    private final VisitDateRepository visitDateRepository;
+    private final GalleryPhotoService galleryPhotoService;
     
     public AdminController(UserService userService, BookingService bookingService, 
-                          SpeciesService speciesService, AnalyticsService analyticsService) {
+                          SpeciesService speciesService, AnalyticsService analyticsService,
+                          VisitDateRepository visitDateRepository, GalleryPhotoService galleryPhotoService) {
         this.userService = userService;
         this.bookingService = bookingService;
         this.speciesService = speciesService;
         this.analyticsService = analyticsService;
+        this.visitDateRepository = visitDateRepository;
+        this.galleryPhotoService = galleryPhotoService;
     }
     
     @GetMapping("/dashboard")
@@ -110,6 +119,60 @@ public class AdminController {
         return ResponseEntity.ok(bookings);
     }
     
+    @GetMapping("/bookings/all")
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        List<Booking> bookings = bookingService.getAllBookings();
+        return ResponseEntity.ok(bookings);
+    }
+    
+    @PostMapping("/bookings")
+    public ResponseEntity<?> createBooking(@RequestBody Booking booking, Authentication authentication) {
+        try {
+            User admin = (User) authentication.getPrincipal();
+            
+            // For admin-created bookings, we need to set a user
+            // If no user is provided, use the admin as the booking user
+            if (booking.getUser() == null) {
+                booking.setUser(admin);
+            }
+            
+            // Ensure VisitDate is properly loaded from database
+            if (booking.getVisitDate() != null && booking.getVisitDate().getDateId() != null) {
+                VisitDate visitDate = visitDateRepository.findById(booking.getVisitDate().getDateId())
+                    .orElseThrow(() -> new RuntimeException("Visit date not found"));
+                booking.setVisitDate(visitDate);
+            }
+            
+            Booking createdBooking = bookingService.createBooking(booking);
+            return ResponseEntity.ok(createdBooking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/bookings/{bookingId}")
+    public ResponseEntity<?> updateBooking(@PathVariable Long bookingId, @RequestBody Booking booking, 
+                                        Authentication authentication) {
+        try {
+            User admin = (User) authentication.getPrincipal();
+            booking.setBookingId(bookingId);
+            Booking updatedBooking = bookingService.updateBooking(booking, admin);
+            return ResponseEntity.ok(updatedBooking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/bookings/{bookingId}")
+    public ResponseEntity<?> deleteBooking(@PathVariable Long bookingId) {
+        try {
+            bookingService.deleteBooking(bookingId);
+            return ResponseEntity.ok(Map.of("message", "Booking deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     @PostMapping("/bookings/{bookingId}/approve")
     public ResponseEntity<?> approveBooking(@PathVariable Long bookingId, Authentication authentication) {
         try {
@@ -138,6 +201,30 @@ public class AdminController {
     public ResponseEntity<List<Species>> getAllSpeciesForAdmin() {
         List<Species> species = speciesService.getAllSpecies();
         return ResponseEntity.ok(species);
+    }
+    
+    @PostMapping("/species/create")
+    public ResponseEntity<?> createSpecies(@RequestBody Species species, Authentication authentication) {
+        try {
+            User admin = (User) authentication.getPrincipal();
+            Species createdSpecies = speciesService.createSpecies(species, admin);
+            return ResponseEntity.ok(createdSpecies);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/species/{speciesId}")
+    public ResponseEntity<?> updateSpecies(@PathVariable Long speciesId, @RequestBody Species species, 
+                                         Authentication authentication) {
+        try {
+            User admin = (User) authentication.getPrincipal();
+            species.setSpeciesId(speciesId);
+            Species updatedSpecies = speciesService.updateSpecies(species, admin);
+            return ResponseEntity.ok(updatedSpecies);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
     
     @DeleteMapping("/species/{speciesId}")
@@ -178,5 +265,74 @@ public class AdminController {
         health.put("version", "1.0.0");
         
         return ResponseEntity.ok(health);
+    }
+    
+    // ==================== GALLERY MANAGEMENT ====================
+    
+    @GetMapping("/gallery/photos")
+    public ResponseEntity<?> getAllGalleryPhotos() {
+        try {
+            return ResponseEntity.ok(galleryPhotoService.getAllPhotos());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/gallery/photos/{photoId}")
+    public ResponseEntity<?> getGalleryPhotoById(@PathVariable Long photoId) {
+        try {
+            return ResponseEntity.ok(galleryPhotoService.getPhotoById(photoId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/gallery/photos")
+    public ResponseEntity<?> createGalleryPhoto(@RequestBody GalleryPhoto photo, Authentication authentication) {
+        try {
+            User admin = (User) authentication.getPrincipal();
+            GalleryPhoto createdPhoto = galleryPhotoService.createPhoto(photo, admin);
+            return ResponseEntity.ok(createdPhoto);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/gallery/photos/{photoId}")
+    public ResponseEntity<?> updateGalleryPhoto(@PathVariable Long photoId, @RequestBody GalleryPhoto photoDetails) {
+        try {
+            GalleryPhoto updatedPhoto = galleryPhotoService.updatePhoto(photoId, photoDetails);
+            return ResponseEntity.ok(updatedPhoto);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/gallery/photos/{photoId}")
+    public ResponseEntity<?> deleteGalleryPhoto(@PathVariable Long photoId) {
+        try {
+            galleryPhotoService.deletePhoto(photoId);
+            return ResponseEntity.ok(Map.of("message", "Photo deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/gallery/photos/statistics")
+    public ResponseEntity<?> getGalleryStatistics() {
+        try {
+            return ResponseEntity.ok(galleryPhotoService.getPhotoStatistics());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/gallery/photos/categories")
+    public ResponseEntity<?> getGalleryCategories() {
+        try {
+            return ResponseEntity.ok(galleryPhotoService.getAllCategories());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

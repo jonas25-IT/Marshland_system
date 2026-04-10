@@ -10,7 +10,24 @@ import {
   CheckCircle,
   MessageSquare,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+  MapPin,
+  Search,
+  Filter,
+  Eye,
+  Edit,
+  Trash2,
+  Plus,
+  TrendingUp,
+  Activity,
+  Bell,
+  Phone,
+  Mail,
+  UserCheck,
+  UserX,
+  Compass,
+  FileText
 } from 'lucide-react';
 
 const StaffDashboard = () => {
@@ -18,12 +35,29 @@ const StaffDashboard = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  // Operational state
+  const [todayBookings, setTodayBookings] = useState([]);
+  const [visitorList, setVisitorList] = useState([]);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   const loadDashboardData = useCallback(async () => {
     try {
       // Load dashboard data from backend
       const response = await api.get('/staff/dashboard');
       setDashboardData(response.data);
+      
+      // Load today's bookings
+      const bookingsResponse = await api.get('/staff/bookings/today');
+      setTodayBookings(bookingsResponse.data);
+      
+      // Load visitor list
+      const visitorsResponse = await api.get('/staff/visitors/today');
+      setVisitorList(visitorsResponse.data);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       // Set mock data as fallback
@@ -50,14 +84,47 @@ const StaffDashboard = () => {
           { id: 3, type: 'checkout', description: 'Jane Smith checked out', timestamp: '09:45 AM', user: 'Staff' },
         ]
       });
+      
+      // Mock today's bookings
+      setTodayBookings([
+        { id: 1, user: { firstName: 'John', lastName: 'Doe', email: 'john@example.com' }, visitDate: '2024-03-30', numberOfVisitors: 3, visitType: 'Guided Tour', status: 'CHECKED_IN', checkInTime: '09:30 AM' },
+        { id: 2, user: { firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com' }, visitDate: '2024-03-30', numberOfVisitors: 2, visitType: 'Self-Guided', status: 'PENDING', checkInTime: null },
+        { id: 3, user: { firstName: 'Bob', lastName: 'Wilson', email: 'bob@example.com' }, visitDate: '2024-03-30', numberOfVisitors: 4, visitType: 'Photography Tour', status: 'SCHEDULED', checkInTime: null },
+      ]);
     } finally {
       setLoading(false);
     }
   }, [api]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  // Check-in functions
+  const handleCheckIn = async (bookingId) => {
+    try {
+      await api.post(`/staff/bookings/${bookingId}/checkin`);
+      await loadDashboardData();
+      setShowCheckInModal(false);
+      setSelectedBooking(null);
+    } catch (error) {
+      console.error('Failed to check in visitor:', error);
+    }
+  };
+
+  const handleCheckOut = async (bookingId) => {
+    try {
+      await api.post(`/staff/bookings/${bookingId}/checkout`);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Failed to check out visitor:', error);
+    }
+  };
+
+  const handleAssistVisitor = async (bookingId, assistanceType) => {
+    try {
+      await api.post(`/staff/bookings/${bookingId}/assist`, { assistanceType });
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Failed to assist visitor:', error);
+    }
+  };
 
   const handleLogout = () => {
     logout();

@@ -32,8 +32,12 @@ const Home = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Leaf className="h-8 w-8 text-primary-600 mr-2" />
-              <h1 className="text-2xl font-bold text-primary-800">🌿 Rugezi Marshland</h1>
+              <img 
+                src="/logo.png" 
+                alt="Rugezi Marshland Logo"
+                className="h-8 w-8 mr-2"
+              />
+              <h1 className="text-2xl font-bold text-primary-800">Rugezi Marshland</h1>
             </div>
             
             {/* Desktop Navigation */}
