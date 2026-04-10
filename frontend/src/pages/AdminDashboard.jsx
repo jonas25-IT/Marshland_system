@@ -31,6 +31,17 @@ const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Role-based styling
+  const getRoleColor = () => {
+    const roleColors = {
+      ADMIN: 'bg-purple-100 text-purple-800',
+      ECOLOGIST: 'bg-green-100 text-green-800',
+      TOURIST: 'bg-blue-100 text-blue-800',
+      STAFF: 'bg-orange-100 text-orange-800'
+    };
+    return roleColors[user?.role] || 'bg-gray-100 text-gray-800';
+  };
   
   // CRUD state
   const [users, setUsers] = useState([]);
@@ -285,6 +296,9 @@ const AdminDashboard = () => {
             
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">Welcome, {user?.name || user?.email}</span>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor()}`}>
+                {user?.role}
+              </span>
               <button
                 onClick={() => navigate('/')}
                 className="btn-outline"

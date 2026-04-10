@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 
@@ -13,6 +13,18 @@ import AdminDashboard from './pages/AdminDashboard';
 import EcologistDashboard from './pages/EcologistDashboard';
 import TouristDashboard from './pages/TouristDashboard';
 import StaffDashboard from './pages/StaffDashboard';
+
+// Universal Dashboard Redirect Component
+const DashboardRedirect = () => {
+  const { user, getDashboardPath } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  const dashboardPath = getDashboardPath(user.role);
+  return <Navigate to={dashboardPath} replace />;
+};
 
 function App() {
   return (
@@ -26,6 +38,7 @@ function App() {
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             
             {/* Protected Routes */}
+            <Route path="/dashboard" element={<DashboardRedirect />} />
             <Route path="/dashboard/admin" element={
               <ProtectedRoute requiredRole="ADMIN">
                 <AdminDashboard />

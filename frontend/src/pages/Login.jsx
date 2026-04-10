@@ -4,15 +4,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { Leaf, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
 const Login = () => {
+  const { login, loading, getDashboardPath } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    password: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  
-  const { login, loading } = useAuth();
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,8 +56,9 @@ const Login = () => {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      // Navigation will be handled by AuthContext and PublicRoute
-      navigate('/');
+      // Redirect to appropriate dashboard based on user role
+      const dashboardPath = getDashboardPath(result.user.role);
+      navigate(dashboardPath);
     }
   };
 

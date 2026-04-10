@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { getRoleDashboardPath } from '../utils/permissions';
 
 // API configuration
 const API_BASE_URL = 'http://localhost:8081/api';
@@ -173,7 +174,7 @@ export const AuthProvider = ({ children }) => {
         payload: { user, token },
       });
       
-      toast.success('Login successful!');
+      toast.success(`Welcome back, ${user.name}!`);
       return { success: true, user };
     } catch (error) {
       const message = error.response?.data || 'Login failed';
@@ -220,6 +221,11 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   };
 
+  // Role-based dashboard redirection
+  const getDashboardPath = (role) => {
+    return getRoleDashboardPath(role);
+  };
+
   // Clear error function
   const clearError = () => {
     dispatch({ type: CLEAR_ERROR });
@@ -231,6 +237,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     clearError,
+    getDashboardPath,
     api, // Export the configured axios instance
   };
 
