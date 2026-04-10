@@ -12,8 +12,19 @@ import {
   Edit,
   Trash2,
   Eye,
-  Filter
+  Filter,
+  Upload,
+  FileDown,
+  TrendingUp,
+  AlertTriangle,
+  Camera,
+  MapPin,
+  Info,
+  X,
+  Check,
+  Image
 } from 'lucide-react';
+import GalleryManagement from '../components/GalleryManagement';
 
 const EcologistDashboard = () => {
   const { user, logout, api } = useAuth();
@@ -28,15 +39,24 @@ const EcologistDashboard = () => {
   const [editingSpecies, setEditingSpecies] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadData, setUploadData] = useState(null);
+  const [showResearchModal, setShowResearchModal] = useState(false);
+  const [researchData, setResearchData] = useState({});
 
   const loadDashboardData = useCallback(async () => {
     try {
       // Load dashboard overview
+      console.log('Loading dashboard data...');
       const dashboardResponse = await api.get('/ecologist/dashboard');
+      console.log('Dashboard API response:', dashboardResponse);
       setDashboardData(dashboardResponse.data);
       
       // Load species data
+      console.log('Loading species data...');
       const speciesResponse = await api.get('/species');
+      console.log('Species API response:', speciesResponse);
       setSpecies(speciesResponse.data);
       
     } catch (error) {
@@ -69,9 +89,9 @@ const EcologistDashboard = () => {
       
       // Mock species data
       setSpecies([
-        { id: 1, scientificName: 'Ardea cinerea', commonName: 'Grey Heron', type: 'BIRD', conservationStatus: 'Least Concern', description: 'Large wading bird', addedBy: 'Dr. Jane Smith', dateAdded: '2024-03-28' },
-        { id: 2, scientificName: 'Nymphaea lotus', commonName: 'Egyptian Water Lily', type: 'PLANT', conservationStatus: 'Least Concern', description: 'Aquatic flowering plant', addedBy: 'Dr. John Doe', dateAdded: '2024-03-27' },
-        { id: 3, scientificName: 'Hippopotamus amphibius', commonName: 'Hippopotamus', type: 'MAMMAL', conservationStatus: 'Vulnerable', description: 'Large semi-aquatic mammal', addedBy: 'Dr. Jane Smith', dateAdded: '2024-03-26' },
+        { speciesId: 1, scientificName: 'Ardea cinerea', commonName: 'Grey Heron', type: 'BIRD', conservationStatus: 'Least Concern', description: 'Large wading bird', createdBy: 'Dr. Jane Smith', dateAdded: '2024-03-28' },
+        { speciesId: 2, scientificName: 'Nymphaea lotus', commonName: 'Egyptian Water Lily', type: 'PLANT', conservationStatus: 'Least Concern', description: 'Aquatic flowering plant', createdBy: 'Dr. John Doe', dateAdded: '2024-03-27' },
+        { speciesId: 3, scientificName: 'Hippopotamus amphibius', commonName: 'Hippopotamus', type: 'MAMMAL', conservationStatus: 'Vulnerable', description: 'Large semi-aquatic mammal', createdBy: 'Dr. Jane Smith', dateAdded: '2024-03-26' },
       ]);
     } finally {
       setLoading(false);
@@ -102,7 +122,7 @@ const EcologistDashboard = () => {
   const handleUpdateSpecies = async (id, speciesData) => {
     try {
       const response = await api.put(`/species/${id}`, speciesData);
-      setSpecies(species.map(spec => spec.id === id ? response.data : spec));
+      setSpecies(species.map(spec => spec.speciesId === id ? response.data : spec));
       setShowSpeciesModal(false);
       setEditingSpecies(null);
     } catch (error) {
@@ -114,11 +134,64 @@ const EcologistDashboard = () => {
     if (window.confirm('Are you sure you want to delete this species?')) {
       try {
         await api.delete(`/species/${id}`);
-        setSpecies(species.filter(spec => spec.id !== id));
+        setSpecies(species.filter(spec => spec.speciesId !== id));
         await loadDashboardData(); // Refresh dashboard stats
       } catch (error) {
         console.error('Failed to delete species:', error);
       }
+    }
+  };
+
+  // Upload functionality
+  const handleUploadData = async (file, dataType) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('dataType', dataType);
+      
+      const response = await api.post('/ecologist/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      setUploadData(response.data);
+      setShowUploadModal(false);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Failed to upload data:', error);
+    }
+  };
+
+  // Research data management
+  const handleSaveResearch = async (researchInfo) => {
+    try {
+      const response = await api.post('/ecologist/research', researchInfo);
+      setResearchData(response.data);
+      setShowResearchModal(false);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Failed to save research data:', error);
+    }
+  };
+
+  // Generate reports
+  const handleGenerateReport = async (reportType) => {
+    try {
+      const response = await api.get(`/ecologist/reports/${reportType}`, {
+        responseType: 'blob',
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${reportType}-report.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Failed to generate report:', error);
     }
   };
 
@@ -228,28 +301,40 @@ const EcologistDashboard = () => {
 
         {/* Quick Actions */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
+          <button 
+            onClick={() => setShowSpeciesModal(true)}
+            className="glass-card p-6 text-center hover:shadow-lg transition-shadow"
+          >
             <Plus className="h-12 w-12 text-primary-600 mx-auto mb-4" />
             <h3 className="font-semibold text-gray-800">Add Species</h3>
             <p className="text-sm text-gray-600">Record new species</p>
           </button>
           
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <Search className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Manage Species</h3>
-            <p className="text-sm text-gray-600">Edit existing species</p>
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="glass-card p-6 text-center hover:shadow-lg transition-shadow"
+          >
+            <Upload className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h3 className="font-semibold text-gray-800">Upload Data</h3>
+            <p className="text-sm text-gray-600">Import research data</p>
           </button>
           
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <BarChart3 className="h-12 w-12 text-green-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Analytics</h3>
-            <p className="text-sm text-gray-600">View biodiversity data</p>
+          <button 
+            onClick={() => setShowResearchModal(true)}
+            className="glass-card p-6 text-center hover:shadow-lg transition-shadow"
+          >
+            <FileText className="h-12 w-12 text-green-600 mx-auto mb-4" />
+            <h3 className="font-semibold text-gray-800">Research Notes</h3>
+            <p className="text-sm text-gray-600">Add observations</p>
           </button>
           
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <FileText className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Reports</h3>
-            <p className="text-sm text-gray-600">Generate reports</p>
+          <button 
+            onClick={() => handleGenerateReport('biodiversity')}
+            className="glass-card p-6 text-center hover:shadow-lg transition-shadow"
+          >
+            <FileDown className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+            <h3 className="font-semibold text-gray-800">Generate Report</h3>
+            <p className="text-sm text-gray-600">Export biodiversity data</p>
           </button>
         </section>
 
@@ -285,6 +370,16 @@ const EcologistDashboard = () => {
               }`}
             >
               Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'gallery'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Gallery
             </button>
             <button
               onClick={() => setActiveTab('reports')}
@@ -328,6 +423,12 @@ const EcologistDashboard = () => {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'gallery' && (
+            <div>
+              <GalleryManagement />
             </div>
           )}
 
@@ -389,7 +490,7 @@ const EcologistDashboard = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredSpecies.map((spec) => (
-                      <tr key={spec.id}>
+                      <tr key={spec.speciesId}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {spec.scientificName}
                         </td>
@@ -411,7 +512,7 @@ const EcologistDashboard = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {spec.addedBy}
+                          {spec.creatorName}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
@@ -425,7 +526,7 @@ const EcologistDashboard = () => {
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteSpecies(spec.id)}
+                              onClick={() => handleDeleteSpecies(spec.speciesId)}
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-4 w-4" />

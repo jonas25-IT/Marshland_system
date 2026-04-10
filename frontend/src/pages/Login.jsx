@@ -190,10 +190,10 @@ const Login = () => {
           <div className="glass-card p-4 rounded-xl">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Test Accounts:</h3>
             <div className="text-xs text-gray-600 space-y-1">
-              <div><strong>Admin:</strong> admin@marshland.rw / admin123</div>
-              <div><strong>Ecologist:</strong> ecologist@marshland.rw / eco123</div>
-              <div><strong>Tourist:</strong> tourist@marshland.rw / tourist123</div>
-              <div><strong>Staff:</strong> staff@marshland.rw / staff123</div>
+              <div><strong>Admin:</strong> test.admin@rugezi.rw / admin123</div>
+              <div><strong>Ecologist:</strong> test.ecologist@rugezi.rw / admin123</div>
+              <div><strong>Tourist:</strong> test.tourist@rugezi.rw / admin123</div>
+              <div><strong>Staff:</strong> test.staff@rugezi.rw / admin123</div>
             </div>
           </div>
         </div>
