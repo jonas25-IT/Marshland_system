@@ -1,8 +1,8 @@
 package com.rugezi.marshland.service;
 
-import com.rugezi.marshland.entity.Photo;
+import com.rugezi.marshland.entity.GalleryPhoto;
 import com.rugezi.marshland.entity.User;
-import com.rugezi.marshland.repository.PhotoRepository;
+import com.rugezi.marshland.repository.GalleryPhotoRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,33 +17,33 @@ import java.util.UUID;
 @Service
 public class PhotoService {
     
-    private final PhotoRepository photoRepository;
+    private final GalleryPhotoRepository photoRepository;
     
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
     
-    public PhotoService(PhotoRepository photoRepository) {
+    public PhotoService(GalleryPhotoRepository photoRepository) {
         this.photoRepository = photoRepository;
     }
     
-    public List<Photo> getAllPhotos() {
+    public List<GalleryPhoto> getAllPhotos() {
         return photoRepository.findAllByOrderByUploadDateDesc();
     }
     
-    public List<Photo> getPhotosByCategory(String category) {
+    public List<GalleryPhoto> getPhotosByCategory(String category) {
         return photoRepository.findByCategoryOrderByUploadDateDesc(category);
     }
     
-    public List<Photo> getPhotosByUser(User user) {
-        return photoRepository.findByUploadedByOrderByUploadDateDesc(user);
+    public List<GalleryPhoto> getPhotosByUser(User user) {
+        return photoRepository.findByUploadedByUserIdOrderByUploadDateDesc(user.getUserId());
     }
     
-    public Photo getPhotoById(Long photoId) {
+    public GalleryPhoto getPhotoById(Long photoId) {
         return photoRepository.findById(photoId)
                 .orElseThrow(() -> new RuntimeException("Photo not found with id: " + photoId));
     }
     
-    public Photo uploadPhoto(MultipartFile file, String title, String description, 
+    public GalleryPhoto uploadPhoto(MultipartFile file, String title, String description, 
                           String category, User uploadedBy) throws IOException {
         // Create upload directory if it doesn't exist
         Path uploadPath = Paths.get(uploadDir);
@@ -65,7 +65,7 @@ public class PhotoService {
         Files.copy(file.getInputStream(), filePath);
         
         // Create photo entity
-        Photo photo = new Photo();
+        GalleryPhoto photo = new GalleryPhoto();
         photo.setTitle(title);
         photo.setDescription(description);
         photo.setCategory(category);
@@ -79,7 +79,7 @@ public class PhotoService {
     }
     
     public void deletePhoto(Long photoId, User user) {
-        Photo photo = getPhotoById(photoId);
+        GalleryPhoto photo = getPhotoById(photoId);
         
         // Check if user owns the photo or is admin
         if (!photo.getUploadedBy().getUserId().equals(user.getUserId()) && 

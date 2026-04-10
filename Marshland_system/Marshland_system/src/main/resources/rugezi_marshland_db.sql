@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2026 at 10:05 AM
+-- Generation Time: Apr 09, 2026 at 01:31 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -38,6 +38,14 @@ CREATE TABLE `booking` (
   `approved_by` int(11) DEFAULT NULL,
   `approval_date` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `booking`
+--
+
+INSERT INTO `booking` (`booking_id`, `user_id`, `date_id`, `number_of_visitors`, `booking_date`, `booking_status`, `special_requests`, `approved_by`, `approval_date`) VALUES
+(1, 15, 1, 2, '2026-04-07 08:43:21', 'Pending', 'Test booking', NULL, NULL),
+(2, 15, 1, 2, '2026-04-07 09:08:09', 'Pending', 'Test booking from admin', NULL, NULL);
 
 --
 -- Triggers `booking`
@@ -95,6 +103,26 @@ CREATE TABLE `feedback` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `gallery_photos`
+--
+
+CREATE TABLE `gallery_photos` (
+  `photo_id` bigint(20) NOT NULL,
+  `category` varchar(255) NOT NULL,
+  `content_type` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_size` bigint(20) NOT NULL,
+  `image_url` varchar(255) NOT NULL,
+  `last_updated` datetime(6) DEFAULT NULL,
+  `title` varchar(255) NOT NULL,
+  `upload_date` datetime(6) NOT NULL,
+  `uploaded_by` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `species`
 --
 
@@ -111,21 +139,6 @@ CREATE TABLE `species` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `species`
---
-
-INSERT INTO `species` (`species_id`, `scientific_name`, `common_name`, `type`, `conservation_status`, `description`, `habitat`, `image_url`, `created_by`, `created_at`, `last_updated`) VALUES
-(1, 'Cyperus papyrus', 'Papyrus', 'FLORA', 'Least Concern', 'A tall aquatic sedge that forms dense stands in wetlands. Essential for the ecosystem and traditional crafts.', 'Marsh edges and shallow water', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(2, 'Phragmites australis', 'Common Reed', 'FLORA', 'Least Concern', 'A widespread perennial grass found in wetlands across the world. Provides habitat for many bird species.', 'Marsh margins and shallow waters', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(3, 'Typha domingensis', 'Southern Cattail', 'FLORA', 'Least Concern', 'A marsh plant with distinctive brown flower spikes. Important for water filtration and wildlife habitat.', 'Freshwater marshes and pond edges', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(4, 'Nymphaea lotus', 'White Water Lily', 'FLORA', 'Least Concern', 'Beautiful aquatic plant with floating leaves and white flowers. Important for aquatic ecosystem balance.', 'Still waters of the marshland', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(5, 'Balearica regulorum', 'Grey Crowned Crane', 'FAUNA', 'Endangered', 'An iconic bird species with distinctive golden crown. National bird of Uganda and symbol of African wetlands.', 'Wetland edges and grasslands', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(6, 'Ardea cinerea', 'Grey Heron', 'FAUNA', 'Least Concern', 'A large wading bird commonly found in wetlands. Expert fish hunter with patient stalking behavior.', 'Shallow waters and marsh edges', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(7, 'Anas platyrhynchos', 'Mallard', 'FAUNA', 'Least Concern', 'One of the most recognizable duck species. Highly adaptable and found in various wetland habitats.', 'Open water and marsh areas', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(8, 'Haliaeetus vociferoides', 'African Fish Eagle', 'FAUNA', 'Vulnerable', 'Magnificent raptor with distinctive white head. Powerful predator that primarily feeds on fish.', 'Trees near water bodies', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32'),
-(9, 'Ciconia ciconia', 'White Stork', 'FAUNA', 'Least Concern', 'Large migratory bird known for its long-distance migrations. Often associated with good luck in local cultures.', 'Wetlands and agricultural fields', NULL, NULL, '2026-02-25 08:36:32', '2026-02-25 08:36:32');
 
 -- --------------------------------------------------------
 
@@ -151,11 +164,14 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`user_id`, `email`, `password_hash`, `first_name`, `last_name`, `role`, `phone`, `registration_date`, `is_active`, `last_updated`) VALUES
-(15, 'admin@rugezi.rw', '$2a$10$W5tYBBPrUXzQau3FtdQp7.svC/f3X8vlwm7mZ3GJWqSEBrGbdr9Qi', 'Admin', 'User', 'ADMIN', '+250788123456', '2026-03-12 09:07:44', 1, '2026-03-12 09:07:44'),
+(15, 'admin@rugezi.rw', '$2a$10$W5tYBBPrUXzQau3FtdQp7.svC/f3X8vlwm7mZ3GJWqSEBrGbdr9Qi', 'Admin', 'Jonas', 'ADMIN', '+250788123456', '2026-03-12 09:07:44', 1, '2026-04-07 08:03:28'),
 (16, 'ecologist@rugezi.rw', '$2a$10$fxuJ0.xr0r6MW53prfOqGu3AbZ8o5yCcggmhdxcnXukbEWUSGEgA.', 'Jean', 'Munyaneza', 'ECOLOGIST', '+250788123457', '2026-03-12 09:07:44', 1, '2026-03-12 09:07:44'),
 (17, 'tourist@rugezi.rw', '$2a$10$krsjgHZzwUkXHVcP5Was4.MAo0LRhDZ8nMbWJ0EGtCell3qpXgSfO', 'Sarah', 'Johnson', 'TOURIST', '+250788123458', '2026-03-12 09:07:44', 1, '2026-03-12 09:07:44'),
 (18, 'staff@rugezi.rw', '$2a$10$59fDmcs1iJev7M/MOgDAEeJB6tQYznAsBdkKB0WlchnlhML2VR7/W', 'Emmanuel', 'Niyonzima', 'STAFF', '+250788123459', '2026-03-12 09:07:44', 1, '2026-03-12 09:07:44'),
-(19, 'testuser@example.com', '$2a$10$Q29ZLHQ7PXXYS56vZkJwyuaYqWcAY7YuT/qxOaCdcLqbD9ucRk2HW', 'Test', 'User', 'TOURIST', '+250788123456', '2026-03-12 09:37:58', 1, '2026-03-12 09:37:58');
+(22, 'test.admin@rugezi.rw', '$2a$10$dcvUTIHMdcKx2d715poA/uuACqWQiWlbFMZkfrAROw5Pef/uK07Bq', 'Test', 'Admin', 'ADMIN', '+250788123460', '2026-04-09 09:30:48', 1, '2026-04-09 09:30:48'),
+(23, 'test.ecologist@rugezi.rw', '$2a$10$MKAfB1/.4OQ0GDW3ghCjze1npmBrLr/9aBJ/xQfaa2vQLrhou7B1q', 'Test', 'Ecologist', 'ECOLOGIST', '+250788123461', '2026-04-09 09:30:49', 1, '2026-04-09 09:30:49'),
+(24, 'test.tourist@rugezi.rw', '$2a$10$c49JlgJKQUWWhVXT5bS9Euc0BD4TDivkwSKlJb3BS7Krx/Nz5eabW', 'Test', 'Tourist', 'TOURIST', '+250788123462', '2026-04-09 09:30:49', 1, '2026-04-09 09:30:49'),
+(25, 'test.staff@rugezi.rw', '$2a$10$g8Ia/WHfytetQgmESwgjIuE5iPcH.nvzV9UiO1spgAA1gLRgSirpi', 'Test', 'Staff', 'STAFF', '+250788123463', '2026-04-09 09:30:50', 1, '2026-04-09 09:30:50');
 
 -- --------------------------------------------------------
 
@@ -230,7 +246,24 @@ INSERT INTO `visit_date` (`date_id`, `visit_date`, `max_capacity`, `current_book
 (53, '2026-04-19', 50, 0),
 (54, '2026-04-20', 50, 0),
 (55, '2026-04-21', 50, 0),
-(56, '2026-04-22', 50, 0);
+(56, '2026-04-22', 50, 0),
+(57, '2026-04-23', 50, 0),
+(58, '2026-04-24', 50, 0),
+(59, '2026-04-25', 50, 0),
+(60, '2026-04-26', 50, 0),
+(61, '2026-04-27', 50, 0),
+(62, '2026-04-28', 50, 0),
+(63, '2026-04-29', 50, 0),
+(64, '2026-04-30', 50, 0),
+(65, '2026-05-01', 50, 0),
+(66, '2026-05-02', 50, 0),
+(67, '2026-05-03', 50, 0),
+(68, '2026-05-04', 50, 0),
+(69, '2026-05-05', 50, 0),
+(70, '2026-05-06', 50, 0),
+(71, '2026-05-07', 50, 0),
+(72, '2026-05-08', 50, 0),
+(73, '2026-05-09', 50, 0);
 
 --
 -- Indexes for dumped tables
@@ -251,6 +284,13 @@ ALTER TABLE `booking`
 ALTER TABLE `feedback`
   ADD PRIMARY KEY (`feedback_id`),
   ADD UNIQUE KEY `booking_id` (`booking_id`);
+
+--
+-- Indexes for table `gallery_photos`
+--
+ALTER TABLE `gallery_photos`
+  ADD PRIMARY KEY (`photo_id`),
+  ADD KEY `FKh7uwk30k8trg3xxnallqurikj` (`uploaded_by`);
 
 --
 -- Indexes for table `species`
@@ -282,7 +322,7 @@ ALTER TABLE `visit_date`
 -- AUTO_INCREMENT for table `booking`
 --
 ALTER TABLE `booking`
-  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `feedback`
@@ -291,22 +331,28 @@ ALTER TABLE `feedback`
   MODIFY `feedback_id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `gallery_photos`
+--
+ALTER TABLE `gallery_photos`
+  MODIFY `photo_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT for table `species`
 --
 ALTER TABLE `species`
-  MODIFY `species_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `species_id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `visit_date`
 --
 ALTER TABLE `visit_date`
-  MODIFY `date_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `date_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- Constraints for dumped tables

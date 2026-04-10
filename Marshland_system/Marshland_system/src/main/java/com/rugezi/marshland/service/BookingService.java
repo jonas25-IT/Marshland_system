@@ -263,6 +263,32 @@ public class BookingService {
                 .toList();
     }
     
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
+    }
+    
+    public Booking updateBooking(Booking booking, User updatedBy) {
+        Booking existingBooking = getBookingById(booking.getBookingId());
+        
+        // Update allowed fields
+        if (booking.getNumberOfVisitors() != null) {
+            existingBooking.setNumberOfVisitors(booking.getNumberOfVisitors());
+        }
+        if (booking.getSpecialRequests() != null) {
+            existingBooking.setSpecialRequests(booking.getSpecialRequests());
+        }
+        if (booking.getVisitDate() != null) {
+            existingBooking.setVisitDate(booking.getVisitDate());
+        }
+        
+        return bookingRepository.save(existingBooking);
+    }
+    
+    public void deleteBooking(Long bookingId) {
+        Booking booking = getBookingById(bookingId);
+        bookingRepository.delete(booking);
+    }
+    
     public Map<String, Object> getBookingStatistics() {
         Map<String, Object> stats = new java.util.HashMap<>();
         stats.put("total", getTotalBookingsCount());

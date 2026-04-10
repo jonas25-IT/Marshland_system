@@ -104,6 +104,11 @@ public class UserService implements UserDetailsService {
             throw new RuntimeException("Email already exists: " + user.getEmail());
         }
         
+        // Encode password
+        if (user.getRawPassword() != null && !user.getRawPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(user.getRawPassword()));
+        }
+        
         // Set default values
         user.setIsActive(true);
         user.setRegistrationDate(LocalDateTime.now());
@@ -129,20 +134,31 @@ public class UserService implements UserDetailsService {
     }
 
     public User updateUser(Long id, User userDetails) {
-
+        
         User user = findById(id);
-
-        user.setFirstName(userDetails.getFirstName());
-        user.setLastName(userDetails.getLastName());
-        user.setPhone(userDetails.getPhone());
-        user.setRole(userDetails.getRole());
-
+        
+        if (userDetails.getFirstName() != null) {
+            user.setFirstName(userDetails.getFirstName());
+        }
+        if (userDetails.getLastName() != null) {
+            user.setLastName(userDetails.getLastName());
+        }
+        if (userDetails.getPhone() != null) {
+            user.setPhone(userDetails.getPhone());
+        }
+        if (userDetails.getRole() != null) {
+            user.setRole(userDetails.getRole());
+        }
+        if (userDetails.getEmail() != null) {
+            user.setEmail(userDetails.getEmail());
+        }
+        
         if (userDetails.getPassword() != null && !userDetails.getPassword().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(userDetails.getPassword()));
         }
-
+        
         user.setLastUpdated(LocalDateTime.now());
-
+        
         return userRepository.save(user);
     }
 
