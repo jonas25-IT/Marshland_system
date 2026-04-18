@@ -4,6 +4,7 @@ import com.rugezi.marshland.entity.Species;
 import com.rugezi.marshland.entity.SpeciesType;
 import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.repository.SpeciesRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,10 +49,83 @@ public class SpeciesService {
     }
     
     public void deleteSpecies(Long id) {
-        if (!speciesRepository.existsById(id)) {
-            throw new RuntimeException("Species not found with id: " + id);
+        Species species = findById(id)
+            .orElseThrow(() -> new RuntimeException("Species not found with id: " + id));
+        speciesRepository.delete(species);
+    }
+    
+    public void deactivateSpecies(Long id, Authentication authentication) {
+        Species species = findById(id)
+            .orElseThrow(() -> new RuntimeException("Species not found with id: " + id));
+        
+        User currentUser = (User) authentication.getPrincipal();
+        
+        // Check if user can deactivate (ecologist can only deactivate their own species, admin can deactivate any)
+        if (!currentUser.getRole().name().equals("ADMIN") && 
+            !species.getCreatedBy().getUserId().equals(currentUser.getUserId())) {
+            throw new RuntimeException("You can only deactivate your own species");
         }
-        speciesRepository.deleteById(id);
+        
+        species.setActive(false);
+        speciesRepository.save(species);
+    }
+    
+    public Species updateSpecies(Long id, Species speciesDetails, Authentication authentication) {
+        Species species = findById(id)
+            .orElseThrow(() -> new RuntimeException("Species not found with id: " + id));
+        
+        User currentUser = (User) authentication.getPrincipal();
+        
+        // Check if user can update (ecologist can only update their own species, admin can update any)
+        if (!currentUser.getRole().name().equals("ADMIN") && 
+            !species.getCreatedBy().getUserId().equals(currentUser.getUserId())) {
+            throw new RuntimeException("You can only update your own species");
+        }
+        
+        species.setCommonName(speciesDetails.getCommonName());
+        species.setType(speciesDetails.getType());
+        species.setConservationStatus(speciesDetails.getConservationStatus());
+        species.setDescription(speciesDetails.getDescription());
+        species.setHabitat(speciesDetails.getHabitat());
+        species.setImageUrl(speciesDetails.getImageUrl());
+        
+        return speciesRepository.save(species);
+    }
+    
+    public Map<String, Object> searchSpecies(String name, String type, String conservationStatus, int page, int size) {
+        List<Species> species = speciesRepository.searchSpecies(name, type, conservationStatus);
+        Map<String, Object> result = new HashMap<>();
+        result.put("species", species);
+        result.put("currentPage", page);
+        result.put("pageSize", size);
+        result.put("totalElements", speciesRepository.countSearchResults(name, type, conservationStatus));
+        return result;
+    }
+    
+    public Map<String, Object> getSpeciesStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalSpecies", getTotalSpeciesCount());
+        stats.put("speciesByType", getSpeciesCountByType());
+        stats.put("speciesByConservationStatus", Map.of(
+            "endangered", getSpeciesByConservationStatus("Endangered"),
+            "vulnerable", getSpeciesByConservationStatus("Vulnerable"),
+            "leastConcern", getSpeciesByConservationStatus("Least Concern")
+        ));
+        stats.put("speciesByHabitat", getSpeciesByHabitat());
+        stats.put("conservationPriorities", getConservationPriorities());
+        return stats;
+    }
+    
+    public List<Species> getMostViewedSpecies() {
+        return speciesRepository.findTop10ByOrderByViewsDesc();
+    }
+    
+    public Map<String, Object> getHabitatInterest() {
+        List<Object[]> habitatData = speciesRepository.getHabitatStatistics();
+        Map<String, Object> result = new HashMap<>();
+        result.put("habitats", habitatData);
+        result.put("totalHabitats", habitatData.size());
+        return result;
     }
     
     // RBAC specific methods
@@ -141,22 +215,11 @@ public class SpeciesService {
                 .toList();
     }
     
-    public List<Species> getMostViewedSpecies() {
-        // This would integrate with view tracking
-        return getFeaturedSpecies(5);
-    }
-    
-    public List<Species> getConservationPriorities() {
-        return getSpeciesByConservationStatus("Endangered");
-    }
-    
-    public Map<String, Object> getSpeciesStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("total", getTotalSpeciesCount());
-        stats.put("byType", getSpeciesCountByType());
-        stats.put("byHabitat", getSpeciesByHabitat());
-        stats.put("endangered", getSpeciesByConservationStatus("Endangered").size());
-        return stats;
+    public Map<String, Object> getConservationPriorities() {
+        Map<String, Object> priorities = new HashMap<>();
+        priorities.put("byHabitat", getSpeciesByHabitat());
+        priorities.put("endangered", getSpeciesByConservationStatus("Endangered").size());
+        return priorities;
     }
     
     public Optional<Species> findById(Long id) {
@@ -194,6 +257,23 @@ public class SpeciesService {
     
     public List<String> getDistinctConservationStatuses() {
         return speciesRepository.findDistinctConservationStatuses();
+    }
+    
+    public long countSearchResults(String name, String habitat, String status) {
+        return speciesRepository.countSearchResults(name, habitat, status);
+    }
+    
+    public void activateSpecies(Long id, Authentication authentication) {
+        Species species = getSpeciesById(id);
+        species.setActive(true);
+        speciesRepository.save(species);
+    }
+    
+    public List<Species> bulkCreateSpecies(List<Species> speciesList, User user) {
+        for (Species species : speciesList) {
+            species.setCreatedBy(user);
+        }
+        return speciesRepository.saveAll(speciesList);
     }
     
     public Optional<Species> findByScientificName(String scientificName) {

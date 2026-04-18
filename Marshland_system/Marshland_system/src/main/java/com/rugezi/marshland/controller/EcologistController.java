@@ -58,20 +58,43 @@ public class EcologistController {
         return ResponseEntity.ok(dashboard);
     }
     
-    @PostMapping("/species/create")
+    // CREATE - Add new species
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ECOLOGIST', 'ADMIN')")
     public ResponseEntity<?> createSpecies(@RequestBody Species species, Authentication authentication) {
         try {
             User currentUser = (User) authentication.getPrincipal();
+            
+            // Validation
+            if (species.getScientificName() == null || species.getScientificName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Scientific name is required"));
+            }
+            if (species.getCommonName() == null || species.getCommonName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Common name is required"));
+            }
+            if (species.getType() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Species type is required"));
+            }
+            if (species.getConservationStatus() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Conservation status is required"));
+            }
+            
             Species createdSpecies = speciesService.createSpecies(species, currentUser);
-            return ResponseEntity.ok(createdSpecies);
-        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of(
+                "message", "Species created successfully",
+                "species", createdSpecies
+            ));
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to create species: " + e.getMessage()));
         }
     }
     
     @PutMapping("/species/{speciesId}")
-    public ResponseEntity<?> updateSpecies(@PathVariable Long speciesId, @RequestBody Species species, 
-                                          Authentication authentication) {
+    public ResponseEntity<?> updateSpecies(@PathVariable Long speciesId,
+                                         @RequestBody Species species,
+                                         Authentication authentication) {
         try {
             User currentUser = (User) authentication.getPrincipal();
             species.setSpeciesId(speciesId);

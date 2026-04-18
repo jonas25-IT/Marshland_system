@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/species")
+@RequestMapping("/api/species-public")
 public class SpeciesController {
     
     private final SpeciesService speciesService;
@@ -44,13 +44,7 @@ public class SpeciesController {
         return speciesService.getSpeciesById(id);
     }
     
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ECOLOGIST', 'ADMIN')")
-    public Species createSpecies(@RequestBody Species species, Authentication authentication) {
-        User currentUser = (User) authentication.getPrincipal();
-        return speciesService.createSpecies(species, currentUser);
-    }
-    
+        
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ECOLOGIST', 'ADMIN')")
     public Species updateSpecies(@PathVariable Long id, @RequestBody Species species) {

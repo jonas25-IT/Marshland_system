@@ -138,6 +138,7 @@ export const AuthProvider = ({ children }) => {
           });
         }
       } else {
+        // No authentication data - user needs to login
         dispatch({ type: LOGOUT });
       }
     };
@@ -188,12 +189,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function
-  const register = async (name, email, password, role) => {
+  const register = async (firstName, lastName, email, password, role) => {
     dispatch({ type: AUTH_START });
     
     try {
       const response = await api.post('/auth/register', {
-        name,
+        firstName,
+        lastName,
         email,
         passwordHash: password,
         role,
@@ -223,7 +225,18 @@ export const AuthProvider = ({ children }) => {
 
   // Role-based dashboard redirection
   const getDashboardPath = (role) => {
-    return getRoleDashboardPath(role);
+    switch (role) {
+      case 'ADMIN':
+        return '/dashboard/admin';
+      case 'ECOLOGIST':
+        return '/dashboard/ecologist';
+      case 'TOURIST':
+        return '/dashboard/tourist';
+      case 'STAFF':
+        return '/dashboard/staff';
+      default:
+        return '/dashboard/tourist';
+    }
   };
 
   // Clear error function

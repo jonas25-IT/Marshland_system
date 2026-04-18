@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Logo from '../components/Logo';
+import toast from 'react-hot-toast';
 import { 
   Users, 
   Home, 
@@ -44,6 +46,12 @@ const StaffDashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  
+  // CRUD state
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showVisitDateModal, setShowVisitDateModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [visitDates, setVisitDates] = useState([]);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -58,6 +66,10 @@ const StaffDashboard = () => {
       // Load visitor list
       const visitorsResponse = await api.get('/staff/visitors/today');
       setVisitorList(visitorsResponse.data);
+      
+      // Load visit dates
+      const visitDatesResponse = await api.get('/staff/visit-dates');
+      setVisitDates(visitDatesResponse.data);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       // Set mock data as fallback
@@ -94,7 +106,7 @@ const StaffDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   // Check-in functions
   const handleCheckIn = async (bookingId) => {
@@ -126,10 +138,95 @@ const StaffDashboard = () => {
     }
   };
 
+  // CRUD Operations for Bookings
+  const handleCreateBooking = async (bookingData) => {
+    try {
+      await api.post('/staff/bookings', bookingData);
+      await loadDashboardData();
+      setShowBookingModal(false);
+      setEditingItem(null);
+      toast.success('Booking created successfully');
+    } catch (error) {
+      console.error('Failed to create booking:', error);
+      toast.error('Failed to create booking: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleEditBooking = async (bookingData) => {
+    try {
+      await api.put(`/staff/bookings/${bookingData.id}`, bookingData);
+      await loadDashboardData();
+      setShowBookingModal(false);
+      setEditingItem(null);
+      toast.success('Booking updated successfully');
+    } catch (error) {
+      console.error('Failed to update booking:', error);
+      toast.error('Failed to update booking: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to delete this booking?')) {
+      try {
+        await api.delete(`/staff/bookings/${bookingId}`);
+        await loadDashboardData();
+        toast.success('Booking deleted successfully');
+      } catch (error) {
+        console.error('Failed to delete booking:', error);
+        toast.error('Failed to delete booking: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
+  // CRUD Operations for Visit Dates
+  const handleCreateVisitDate = async (visitDateData) => {
+    try {
+      await api.post('/staff/visit-dates', visitDateData);
+      await loadDashboardData();
+      setShowVisitDateModal(false);
+      setEditingItem(null);
+      toast.success('Visit date created successfully');
+    } catch (error) {
+      console.error('Failed to create visit date:', error);
+      toast.error('Failed to create visit date: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleEditVisitDate = async (visitDateData) => {
+    try {
+      await api.put(`/staff/visit-dates/${visitDateData.id}`, visitDateData);
+      await loadDashboardData();
+      setShowVisitDateModal(false);
+      setEditingItem(null);
+      toast.success('Visit date updated successfully');
+    } catch (error) {
+      console.error('Failed to update visit date:', error);
+      toast.error('Failed to update visit date: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleDeleteVisitDate = async (visitDateId) => {
+    if (window.confirm('Are you sure you want to delete this visit date?')) {
+      try {
+        await api.delete(`/staff/visit-dates/${visitDateId}`);
+        await loadDashboardData();
+        toast.success('Visit date deleted successfully');
+      } catch (error) {
+        console.error('Failed to delete visit date:', error);
+        toast.error('Failed to delete visit date: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
   };
+
+  // Load dashboard data on component mount
+  useEffect(() => {
+    loadDashboardData();
+  }, []); // Empty dependency array to run only once
 
   if (loading) {
     return (
@@ -146,12 +243,12 @@ const StaffDashboard = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-primary-600 mr-2" />
-              <h1 className="text-2xl font-bold text-primary-800">Staff Dashboard</h1>
+              <Logo size="medium" variant="icon-only" />
+              <h1 className="text-2xl font-bold text-primary-800 ml-3">Staff Dashboard</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user?.name || user?.email}</span>
+              <span className="text-gray-700">Welcome, {String(user?.name || user?.email || 'Staff')}</span>
               <button
                 onClick={() => navigate('/')}
                 className="btn-outline"
@@ -287,7 +384,7 @@ const StaffDashboard = () => {
                 <div className="flex items-center">
                   <Calendar className="h-10 w-10 text-orange-500 mr-3" />
                   <div>
-                    <p className="font-semibold text-gray-800">{booking.user}</p>
+                    <p className="font-semibold text-gray-800">{booking.user?.firstName && booking.user?.lastName ? `${booking.user.firstName} ${booking.user.lastName}` : String(booking.user?.email || booking.user)}</p>
                     <p className="text-sm text-gray-600">{booking.visitDate} • {booking.numberOfVisitors} visitors</p>
                     <p className="text-sm text-gray-500">{booking.visitType}</p>
                   </div>
@@ -325,7 +422,7 @@ const StaffDashboard = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-600">{activity.user}</p>
+                  <p className="text-sm font-medium text-gray-600">{activity.user?.firstName && activity.user?.lastName ? `${activity.user.firstName} ${activity.user.lastName}` : String(activity.user?.email || activity.user)}</p>
                 </div>
               </div>
             ))}

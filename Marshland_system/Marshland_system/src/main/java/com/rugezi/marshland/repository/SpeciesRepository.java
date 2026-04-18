@@ -32,4 +32,21 @@ public interface SpeciesRepository extends JpaRepository<Species, Long> {
     Optional<Species> findByScientificName(String scientificName);
     
     boolean existsByScientificName(String scientificName);
+    
+    @Query("SELECT s FROM Species s WHERE " +
+           "(:name IS NULL OR s.commonName LIKE %:name%) AND " +
+           "(:habitat IS NULL OR s.habitat LIKE %:habitat%) AND " +
+           "(:status IS NULL OR s.conservationStatus = :status)")
+    List<Species> searchSpecies(@Param("name") String name, @Param("habitat") String habitat, @Param("status") String status);
+    
+    @Query("SELECT COUNT(s) FROM Species s WHERE " +
+           "(:name IS NULL OR s.commonName LIKE %:name%) AND " +
+           "(:habitat IS NULL OR s.habitat LIKE %:habitat%) AND " +
+           "(:status IS NULL OR s.conservationStatus = :status)")
+    long countSearchResults(@Param("name") String name, @Param("habitat") String habitat, @Param("status") String status);
+    
+    List<Species> findTop10ByOrderByViewsDesc();
+    
+    @Query("SELECT s.habitat, COUNT(s) FROM Species s GROUP BY s.habitat")
+    List<Object[]> getHabitatStatistics();
 }

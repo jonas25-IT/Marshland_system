@@ -5,7 +5,8 @@ import { Leaf, Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -37,10 +38,16 @@ const Register = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.name) {
-      newErrors.name = 'Name is required';
-    } else if (formData.name.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+    if (!formData.firstName) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+    }
+    
+    if (!formData.lastName) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
     }
     
     if (!formData.email) {
@@ -74,7 +81,7 @@ const Register = () => {
       return;
     }
 
-    const result = await register(formData.name, formData.email, formData.password, formData.role);
+    const result = await register(formData.firstName, formData.lastName, formData.email, formData.password, formData.role);
     
     if (result.success) {
       // Navigation will be handled by AuthContext and PublicRoute
@@ -104,28 +111,53 @@ const Register = () => {
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="glass-card p-8 rounded-xl space-y-6">
-            {/* Name */}
+            {/* First Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                First Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="name"
-                  name="name"
+                  id="firstName"
+                  name="firstName"
                   type="text"
                   required
-                  className={`input-field pl-10 ${errors.name ? 'border-red-500' : ''}`}
-                  placeholder="Enter your full name"
-                  value={formData.name}
+                  className={`input-field pl-10 ${errors.firstName ? 'border-red-500' : ''}`}
+                  placeholder="Enter your first name"
+                  value={formData.firstName}
                   onChange={handleChange}
                 />
               </div>
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              {errors.firstName && (
+                <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+              )}
+            </div>
+
+            {/* Last Name */}
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                Last Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  required
+                  className={`input-field pl-10 ${errors.lastName ? 'border-red-500' : ''}`}
+                  placeholder="Enter your last name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                />
+              </div>
+              {errors.lastName && (
+                <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
               )}
             </div>
 

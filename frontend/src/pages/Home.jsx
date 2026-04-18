@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Leaf, Users, Camera, Mail, Phone, MapPin, Menu, X } from 'lucide-react';
+import Logo from '../components/Logo';
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
@@ -31,14 +32,7 @@ const Home = () => {
       <nav className="glass-card fixed w-full top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="Rugezi Marshland Logo"
-                className="h-8 w-8 mr-2"
-              />
-              <h1 className="text-2xl font-bold text-primary-800">Rugezi Marshland</h1>
-            </div>
+            <Logo size="medium" variant="full" animated={true} />
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">

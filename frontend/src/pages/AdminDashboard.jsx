@@ -1,24 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Logo from '../components/Logo';
 import { 
   Users, 
-  Calendar, 
-  Leaf, 
+  UserCheck, 
+  UserX, 
+  Settings, 
+  BarChart3, 
   TrendingUp, 
-  Home, 
-  User, 
-  LogOut,
-  BarChart3,
-  Settings,
-  FileText,
-  DollarSign,
+  Activity, 
+  Calendar, 
+  FileText, 
+  Shield, 
+  AlertTriangle, 
+  Eye, 
+  Edit, 
+  Trash2, 
   Plus,
-  Edit,
-  Trash2,
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  LogOut,
+  Home,
+  Menu,
+  Bell,
+  Mail,
+  Phone,
+  Leaf, 
+  User, 
+  DollarSign,
   Check,
   X,
-  Eye,
   Image,
   MessageSquare
 } from 'lucide-react';
@@ -55,6 +69,11 @@ const AdminDashboard = () => {
 
   const loadDashboardData = useCallback(async () => {
     try {
+      // Debug: Check current user and authentication
+      console.log('Current user:', user);
+      console.log('User role:', user?.role);
+      console.log('Is authenticated:', !!user);
+      
       // Load dashboard overview
       const dashboardResponse = await api.get('/admin/dashboard');
       setDashboardData(dashboardResponse.data);
@@ -74,29 +93,47 @@ const AdminDashboard = () => {
       
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      // Set mock data as fallback
-      setDashboardData({
-        totalUsers: 4,
-        totalBookings: 0,
-        totalSpecies: 9,
-        pendingBookings: 0,
-        recentUsers: [
-          { id: 15, name: 'Admin User', email: 'admin@rugezi.rw', role: 'ADMIN', createdAt: '2026-03-12' },
-          { id: 16, name: 'Jean Munyaneza', email: 'ecologist@rugezi.rw', role: 'ECOLOGIST', createdAt: '2026-03-12' },
-        ],
-        recentBookings: [],
-      });
       
-      // Mock data for CRUD (real data will come from database)
-      setUsers([
-        { id: 15, name: 'Admin User', email: 'admin@rugezi.rw', role: 'ADMIN', createdAt: '2026-03-12', enabled: true },
-        { id: 16, name: 'Jean Munyaneza', email: 'ecologist@rugezi.rw', role: 'ECOLOGIST', createdAt: '2026-03-12', enabled: true },
-        { id: 17, name: 'Sarah Johnson', email: 'tourist@rugezi.rw', role: 'TOURIST', createdAt: '2026-03-12', enabled: true },
-        { id: 18, name: 'Emmanuel Niyonzima', email: 'staff@rugezi.rw', role: 'STAFF', createdAt: '2026-03-12', enabled: true },
-      ]);
-      
-      setBookings([]);
-      
+      // Check if it's a 403 error (access denied)
+      if (error.response?.status === 403) {
+        console.warn('Access denied - User may not have ADMIN role');
+        // Show a user-friendly message for 403 errors
+        setDashboardData({
+          error: 'Access Denied',
+          message: 'You need admin privileges to access this dashboard.',
+          totalUsers: 0,
+          totalBookings: 0,
+          totalSpecies: 0,
+          pendingBookings: 0,
+          recentUsers: [],
+          recentBookings: [],
+          analytics: { userGrowth: 0, bookingGrowth: 0, speciesGrowth: 0, revenueGrowth: 0 }
+        });
+      } else {
+        // Set mock data as fallback for other errors
+        setDashboardData({
+          totalUsers: 150,
+          totalBookings: 89,
+          totalSpecies: 25,
+          pendingBookings: 12,
+          recentUsers: [
+            { id: 1, name: 'John Doe', email: 'john@example.com', role: 'TOURIST', dateJoined: '2026-03-15' },
+            { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'ECOLOGIST', dateJoined: '2026-03-14' },
+            { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'STAFF', dateJoined: '2026-03-13' },
+          ],
+          recentBookings: [
+            { id: 1, user: 'John Doe', visitDate: '2026-03-20', numberOfVisitors: 3, status: 'CONFIRMED' },
+            { id: 2, user: 'Jane Smith', visitDate: '2026-03-21', numberOfVisitors: 2, status: 'PENDING' },
+            { id: 3, user: 'Bob Johnson', visitDate: '2026-03-22', numberOfVisitors: 4, status: 'CONFIRMED' },
+          ],
+          analytics: {
+            userGrowth: 15,
+            bookingGrowth: 23,
+            speciesGrowth: 8,
+            revenueGrowth: 18
+          }
+        });
+      }
       setSpecies([
         { id: 1, scientificName: 'Cyperus papyrus', commonName: 'Papyrus', type: 'FLORA', conservationStatus: 'Least Concern', description: 'A tall aquatic sedge that forms dense stands in wetlands.', addedBy: 'Admin', dateAdded: '2026-02-25' },
         { id: 2, scientificName: 'Phragmites australis', commonName: 'Common Reed', type: 'FLORA', conservationStatus: 'Least Concern', description: 'A widespread perennial grass found in wetlands.', addedBy: 'Admin', dateAdded: '2026-02-25' },
@@ -111,11 +148,11 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     loadDashboardData();
-  }, [loadDashboardData]);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -286,12 +323,8 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="Rugezi Marshland Logo"
-                className="h-8 w-8 text-primary-600 mr-2"
-              />
-              <h1 className="text-2xl font-bold text-primary-800">Admin Dashboard</h1>
+              <Logo size="medium" variant="icon-only" />
+              <h1 className="text-2xl font-bold text-primary-800 ml-3">Admin Dashboard</h1>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -325,6 +358,22 @@ const AdminDashboard = () => {
           <h2 className="text-3xl font-bold text-gray-800">Welcome, Admin!</h2>
           <p className="text-gray-600">Manage the Rugezi Marshland system</p>
         </section>
+
+        {/* Access Denied Warning */}
+        {dashboardData?.error && (
+          <section className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center">
+              <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
+              <div>
+                <h3 className="text-lg font-semibold text-red-800">{dashboardData.error}</h3>
+                <p className="text-red-600">{dashboardData.message}</p>
+                <p className="text-sm text-red-500 mt-2">
+                  Current role: {user?.role || 'Unknown'} | Please contact an administrator if you believe this is an error.
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Stats Cards */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

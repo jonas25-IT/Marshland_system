@@ -2,6 +2,7 @@ package com.rugezi.marshland.controller;
 
 import com.rugezi.marshland.entity.Booking;
 import com.rugezi.marshland.entity.User;
+import com.rugezi.marshland.entity.VisitDate;
 import com.rugezi.marshland.service.BookingService;
 import com.rugezi.marshland.service.VisitDateService;
 import org.springframework.http.ResponseEntity;
@@ -173,6 +174,92 @@ public class StaffController {
             return ResponseEntity.ok(Map.of("message", "Visit note added successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/bookings")
+    public ResponseEntity<?> createBooking(@RequestBody Booking booking,
+                                         Authentication authentication) {
+        try {
+            User staff = (User) authentication.getPrincipal();
+            Booking createdBooking = bookingService.createBooking(booking);
+            return ResponseEntity.ok(createdBooking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/bookings/{bookingId}")
+    public ResponseEntity<?> updateBooking(@PathVariable Long bookingId,
+                                         @RequestBody Booking booking,
+                                         Authentication authentication) {
+        try {
+            User staff = (User) authentication.getPrincipal();
+            booking.setBookingId(bookingId);
+            Booking updatedBooking = bookingService.updateBooking(booking);
+            return ResponseEntity.ok(updatedBooking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/bookings/{bookingId}")
+    public ResponseEntity<?> deleteBooking(@PathVariable Long bookingId,
+                                         Authentication authentication) {
+        try {
+            User staff = (User) authentication.getPrincipal();
+            bookingService.deleteBooking(bookingId);
+            return ResponseEntity.ok(Map.of("message", "Booking deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/visit-dates")
+    public ResponseEntity<?> createVisitDate(@RequestBody VisitDate visitDate,
+                                           Authentication authentication) {
+        try {
+            User staff = (User) authentication.getPrincipal();
+            VisitDate createdDate = visitDateService.createVisitDate(visitDate);
+            return ResponseEntity.ok(createdDate);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/visit-dates/{dateId}")
+    public ResponseEntity<?> updateVisitDate(@PathVariable Long dateId,
+                                           @RequestBody VisitDate visitDate,
+                                           Authentication authentication) {
+        try {
+            User staff = (User) authentication.getPrincipal();
+            visitDate.setDateId(dateId);
+            VisitDate updatedDate = visitDateService.updateVisitDate(visitDate);
+            return ResponseEntity.ok(updatedDate);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/visit-dates/{dateId}")
+    public ResponseEntity<?> deleteVisitDate(@PathVariable Long dateId,
+                                           Authentication authentication) {
+        try {
+            User staff = (User) authentication.getPrincipal();
+            visitDateService.deleteVisitDate(dateId);
+            return ResponseEntity.ok(Map.of("message", "Visit date deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/visit-dates")
+    public ResponseEntity<List<VisitDate>> getAllVisitDates(Authentication authentication) {
+        try {
+            List<VisitDate> visitDates = visitDateService.getAllVisitDates();
+            return ResponseEntity.ok(visitDates);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
     }
     

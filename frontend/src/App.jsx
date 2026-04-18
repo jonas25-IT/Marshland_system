@@ -10,11 +10,12 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
-import EcologistDashboard from './pages/EcologistDashboard';
+import EcologistDashboard from './pages/EcologistDashboardEnhanced';
 import TouristDashboard from './pages/TouristDashboard';
 import StaffDashboard from './pages/StaffDashboard';
+import LogoShowcase from './components/LogoShowcase';
 
-// Universal Dashboard Redirect Component
+// Dashboard Redirect Component
 const DashboardRedirect = () => {
   const { user, getDashboardPath } = useAuth();
   
@@ -36,6 +37,7 @@ function App() {
             <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/logo-showcase" element={<LogoShowcase />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={<DashboardRedirect />} />
@@ -63,19 +65,19 @@ function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          
-          {/* Global Toast Notifications */}
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
-        </div>
+        
+        {/* Global Toast Notifications */}
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
+      </div>
       </Router>
     </AuthProvider>
   );

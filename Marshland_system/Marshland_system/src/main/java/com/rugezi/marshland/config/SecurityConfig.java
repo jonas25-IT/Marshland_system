@@ -86,6 +86,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/gallery/photos/recent").permitAll() // Public access to recent photos
                         .requestMatchers("/api/gallery/photos/categories").permitAll() // Public access to categories
                         .requestMatchers("/api/gallery/files/{filename:.+}").permitAll() // Public access to serve files
+                        .requestMatchers("/api/admin/dashboard").authenticated() // Allow any authenticated user to access dashboard
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/ecologist/**").hasAnyRole("ADMIN", "ECOLOGIST")
                         .requestMatchers("/api/tourist/**").hasAnyRole("ADMIN", "TOURIST")

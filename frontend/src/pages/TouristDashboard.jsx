@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Logo from '../components/Logo';
 import { 
   Calendar, 
   Home, 
@@ -38,10 +39,12 @@ const TouristDashboard = () => {
   // Booking state
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [myFeedback, setMyFeedback] = useState([]);
   
   // Feedback state
-  const [myFeedback, setMyFeedback] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   
   // Biodiversity state
@@ -89,7 +92,7 @@ const TouristDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   // Booking functions
   const handleCreateBooking = async (bookingData) => {
@@ -97,8 +100,104 @@ const TouristDashboard = () => {
       const response = await api.post('/tourist/bookings/create', bookingData);
       await loadDashboardData();
       setShowBookingModal(false);
+      setEditingItem(null);
+      toast.success('Booking created successfully!');
     } catch (error) {
       console.error('Failed to create booking:', error);
+      toast.error('Failed to create booking: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleEditBooking = async (bookingData) => {
+    try {
+      await api.put(`/tourist/bookings/${bookingData.id}`, bookingData);
+      await loadDashboardData();
+      setShowBookingModal(false);
+      setEditingItem(null);
+      toast.success('Booking updated successfully!');
+    } catch (error) {
+      console.error('Failed to update booking:', error);
+      toast.error('Failed to update booking: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        await api.delete(`/tourist/bookings/${bookingId}`);
+        await loadDashboardData();
+        toast.success('Booking cancelled successfully!');
+      } catch (error) {
+        console.error('Failed to cancel booking:', error);
+        toast.error('Failed to cancel booking: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        await api.post(`/tourist/bookings/${bookingId}/cancel`);
+        await loadDashboardData();
+        toast.success('Booking cancelled successfully!');
+      } catch (error) {
+        console.error('Failed to cancel booking:', error);
+        toast.error('Failed to cancel booking: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
+  // CRUD Operations for Feedback
+  const handleCreateFeedback = async (feedbackData) => {
+    try {
+      await api.post('/tourist/feedback/create', feedbackData);
+      await loadDashboardData();
+      setShowFeedbackModal(false);
+      setEditingItem(null);
+      toast.success('Feedback submitted successfully!');
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+      toast.error('Failed to submit feedback: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleEditFeedback = async (feedbackData) => {
+    try {
+      await api.put(`/tourist/feedback/${feedbackData.id}`, feedbackData);
+      await loadDashboardData();
+      setShowFeedbackModal(false);
+      setEditingItem(null);
+      toast.success('Feedback updated successfully!');
+    } catch (error) {
+      console.error('Failed to update feedback:', error);
+      toast.error('Failed to update feedback: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleDeleteFeedback = async (feedbackId) => {
+    if (window.confirm('Are you sure you want to delete this feedback?')) {
+      try {
+        await api.delete(`/tourist/feedback/${feedbackId}`);
+        await loadDashboardData();
+        toast.success('Feedback deleted successfully!');
+      } catch (error) {
+        console.error('Failed to delete feedback:', error);
+        toast.error('Failed to delete feedback: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
+  // CRUD Operations for Profile
+  const handleUpdateProfile = async (profileData) => {
+    try {
+      await api.put('/tourist/profile', profileData);
+      await loadDashboardData();
+      setShowProfileModal(false);
+      setEditingItem(null);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -131,7 +230,7 @@ const TouristDashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, [loadDashboardData]);
+  }, []);
 
   if (loading) {
     return (
@@ -148,8 +247,8 @@ const TouristDashboard = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-primary-600 mr-2" />
-              <h1 className="text-2xl font-bold text-primary-800">Tourist Dashboard</h1>
+              <Logo size="medium" variant="icon-only" />
+              <h1 className="text-2xl font-bold text-primary-800 ml-3">Tourist Dashboard</h1>
             </div>
             
             <div className="flex items-center space-x-4">

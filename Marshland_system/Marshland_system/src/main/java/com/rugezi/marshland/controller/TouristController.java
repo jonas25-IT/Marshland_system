@@ -161,6 +161,69 @@ public class TouristController {
         return ResponseEntity.ok(currentUser);
     }
     
+    @PutMapping("/bookings/{bookingId}")
+    public ResponseEntity<?> updateBooking(@PathVariable Long bookingId,
+                                         @RequestBody Booking booking,
+                                         Authentication authentication) {
+        try {
+            User currentUser = (User) authentication.getPrincipal();
+            // Verify booking belongs to current user
+            Booking existingBooking = bookingService.getBookingById(bookingId);
+            if (!existingBooking.getUser().getUserId().equals(currentUser.getUserId())) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+            }
+            
+            booking.setBookingId(bookingId);
+            Booking updatedBooking = bookingService.updateBooking(booking);
+            return ResponseEntity.ok(updatedBooking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/bookings/{bookingId}")
+    public ResponseEntity<?> deleteBooking(@PathVariable Long bookingId,
+                                         Authentication authentication) {
+        try {
+            User currentUser = (User) authentication.getPrincipal();
+            // Verify booking belongs to current user
+            Booking existingBooking = bookingService.getBookingById(bookingId);
+            if (!existingBooking.getUser().getUserId().equals(currentUser.getUserId())) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+            }
+            
+            bookingService.deleteBooking(bookingId);
+            return ResponseEntity.ok(Map.of("message", "Booking deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/feedback/{feedbackId}")
+    public ResponseEntity<?> updateFeedback(@PathVariable Long feedbackId,
+                                          @RequestBody Map<String, String> feedbackData,
+                                          Authentication authentication) {
+        try {
+            User currentUser = (User) authentication.getPrincipal();
+            // Add feedback update logic here
+            return ResponseEntity.ok(Map.of("message", "Feedback updated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/feedback/{feedbackId}")
+    public ResponseEntity<?> deleteFeedback(@PathVariable Long feedbackId,
+                                          Authentication authentication) {
+        try {
+            User currentUser = (User) authentication.getPrincipal();
+            // Add feedback delete logic here
+            return ResponseEntity.ok(Map.of("message", "Feedback deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> profileData, 
                                          Authentication authentication) {

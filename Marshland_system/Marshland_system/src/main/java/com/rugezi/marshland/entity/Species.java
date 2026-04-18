@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "species")
 @EntityListeners(AuditingEntityListener.class)
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "createdBy"})
 public class Species {
     
     @Id
@@ -42,6 +42,9 @@ public class Species {
     
     @Column(name = "image_url")
     private String imageUrl;
+    
+    @Column(name = "views")
+    private Integer views = 0;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
@@ -91,8 +94,17 @@ public class Species {
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     
+    public int getViews() { return views != null ? views : 0; }
+    public void setViews(Integer views) { this.views = views; }
+    
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+    
+    @Column(name = "is_active")
+    private Boolean active = true;
+    
+    public boolean isActive() { return active != null ? active : true; }
+    public void setActive(Boolean active) { this.active = active; }
     
     @JsonProperty("createdBy")
     public String getCreatorName() { 
