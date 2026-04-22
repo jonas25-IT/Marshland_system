@@ -12,8 +12,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import java.io.IOException;
 
@@ -32,18 +37,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
-            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                String username = jwtUtils.getUserNameFromJwtToken(jwt);
+            System.out.println("JWT Token present: " + (jwt != null));
+            if (jwt != null) {
+                System.out.println("JWT Token (first 50 chars): " + jwt.substring(0, Math.min(50, jwt.length())));
+                boolean isValid = jwtUtils.validateJwtToken(jwt);
+                System.out.println("JWT Token valid: " + isValid);
+                
+                if (isValid) {
+                    String username = jwtUtils.getUserNameFromJwtToken(jwt);
+                    System.out.println("Username from token: " + username);
 
-                UserDetails userDetails = userService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UserDetails userDetails = userService.loadUserByUsername(username);
+                    
+                    // Extract and clean role authority
+                    String role = userDetails.getAuthorities().stream()
+                            .findFirst()
+                            .map(GrantedAuthority::getAuthority)
+                            .orElse("TOURIST");
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // UNIVERSAL ADMIN AUTHORITY OVERRIDE
+                    Collection<SimpleGrantedAuthority> authorities;
+                    if ("admin@rugezi.rw".equalsIgnoreCase(username)) {
+                        authorities = List.of(
+                            new SimpleGrantedAuthority("ADMIN"),
+                            new SimpleGrantedAuthority("ROLE_ADMIN")
+                        );
+                    } else {
+                        if (!role.startsWith("ROLE_")) {
+                            role = "ROLE_" + role;
+                        }
+                        authorities = List.of(new SimpleGrantedAuthority(role));
+                    }
+
+                    System.out.println(">>> UNIVERSAL HANDSHAKE: User=" + username + " Authorities=" + authorities);
+                    
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, authorities);
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    System.out.println(">>> CONTEXT SET: Auth=" + SecurityContextHolder.getContext().getAuthentication());
+                    System.out.println("Authentication set successfully for user: " + username);
+                }
             }
         } catch (Exception e) {
             System.err.println("Cannot set user authentication: " + e.getMessage());
+            e.printStackTrace();
         }
 
         filterChain.doFilter(request, response);

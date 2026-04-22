@@ -58,10 +58,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3001", "http://127.0.0.1:3001"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         
@@ -76,33 +76,28 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> 
-                    auth.requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/species/**").permitAll() // Public access for species info
-                        .requestMatchers("/api/photos/**").permitAll() // Public access for old photos endpoint
-                        .requestMatchers("/api/gallery/photos").permitAll() // Public access to view all photos
-                        .requestMatchers("/api/gallery/photos/{photoId}").permitAll() // Public access to view photo by ID
-                        .requestMatchers("/api/gallery/photos/category/{category}").permitAll() // Public access to view photos by category
-                        .requestMatchers("/api/gallery/photos/search").permitAll() // Public access to search photos
-                        .requestMatchers("/api/gallery/photos/recent").permitAll() // Public access to recent photos
-                        .requestMatchers("/api/gallery/photos/categories").permitAll() // Public access to categories
-                        .requestMatchers("/api/gallery/files/{filename:.+}").permitAll() // Public access to serve files
-                        .requestMatchers("/api/admin/dashboard").authenticated() // Allow any authenticated user to access dashboard
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    auth.requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/auth/profile").authenticated()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/species/**").permitAll()
+                        .requestMatchers("/api/gallery/photos/**").permitAll()
+                        .requestMatchers("/api/gallery/files/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/api/ecologist/**").hasAnyRole("ADMIN", "ECOLOGIST")
                         .requestMatchers("/api/tourist/**").hasAnyRole("ADMIN", "TOURIST")
                         .requestMatchers("/api/staff/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/users/profile").authenticated()
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
-                        // Booking endpoints by role
                         .requestMatchers("/api/bookings/create").hasAnyRole("TOURIST", "ADMIN")
                         .requestMatchers("/api/bookings/my-bookings").hasAnyRole("TOURIST", "ADMIN")
-                        .requestMatchers("/api/bookings/approve").hasRole("ADMIN")
+                        .requestMatchers("/api/bookings/approve").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/api/bookings/daily").hasAnyRole("ADMIN", "STAFF", "ECOLOGIST")
                         .requestMatchers("/api/bookings/**").authenticated()
                         .requestMatchers("/api/feedback/create").hasAnyRole("TOURIST", "ADMIN")
                         .requestMatchers("/api/feedback/**").authenticated()
                         .requestMatchers("/api/visit-dates/**").authenticated()
-                        .requestMatchers("/api/analytics/**").hasAnyRole("ADMIN", "ECOLOGIST")
+                        .requestMatchers("/api/analytics/**").hasAnyAuthority("ADMIN", "ECOLOGIST")
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers

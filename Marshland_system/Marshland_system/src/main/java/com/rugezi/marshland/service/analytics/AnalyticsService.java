@@ -574,4 +574,61 @@ public class AnalyticsService {
         
         return habitatInterest;
     }
+    
+    // Additional methods for AdminController
+    public Map<String, Object> getPlatformGrowthData() {
+        Map<String, Object> growthData = new HashMap<>();
+        
+        // Calculate user growth over time
+        LocalDate now = LocalDate.now();
+        LocalDate sixMonthsAgo = now.minusMonths(6);
+        
+        List<User> recentUsers = userRepository.findByRegistrationDateBetween(sixMonthsAgo.atStartOfDay(), now.atStartOfDay());
+        
+        Map<String, Long> monthlyUserGrowth = recentUsers.stream()
+            .collect(Collectors.groupingBy(
+                user -> YearMonth.from(user.getRegistrationDate()).toString(),
+                Collectors.counting()
+            ));
+        
+        growthData.put("monthlyUserGrowth", monthlyUserGrowth);
+        growthData.put("totalNewUsers", recentUsers.size());
+        
+        // Calculate booking growth
+        List<Booking> recentBookings = bookingRepository.findByVisitDateVisitDateBetween(sixMonthsAgo, now);
+        
+        Map<String, Long> monthlyBookingGrowth = recentBookings.stream()
+            .collect(Collectors.groupingBy(
+                booking -> YearMonth.from(booking.getVisitDate().getVisitDate()).toString(),
+                Collectors.counting()
+            ));
+        
+        growthData.put("monthlyBookingGrowth", monthlyBookingGrowth);
+        growthData.put("totalNewBookings", recentBookings.size());
+        
+        return growthData;
+    }
+    
+    public Map<String, Object> getBookingStatusDistribution() {
+        Map<String, Object> distribution = new HashMap<>();
+        
+        List<Booking> allBookings = bookingRepository.findAll();
+        
+        Map<BookingStatus, Long> statusCounts = allBookings.stream()
+            .collect(Collectors.groupingBy(Booking::getBookingStatus, Collectors.counting()));
+        
+        distribution.put("statusCounts", statusCounts);
+        distribution.put("totalBookings", allBookings.size());
+        
+        // Calculate percentages
+        Map<String, Double> statusPercentages = new HashMap<>();
+        for (Map.Entry<BookingStatus, Long> entry : statusCounts.entrySet()) {
+            double percentage = (double) entry.getValue() / allBookings.size() * 100;
+            statusPercentages.put(entry.getKey().toString(), Math.round(percentage * 100.0) / 100.0);
+        }
+        
+        distribution.put("statusPercentages", statusPercentages);
+        
+        return distribution;
+    }
 }

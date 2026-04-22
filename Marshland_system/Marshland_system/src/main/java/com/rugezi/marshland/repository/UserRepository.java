@@ -30,4 +30,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     @Query("SELECT COUNT(u) FROM User u WHERE u.registrationDate > :date")
     long countByRegistrationDateAfter(@Param("date") LocalDateTime date);
+    
+    List<User> findByRegistrationDateBetween(LocalDateTime startDate, LocalDateTime endDate);
 }

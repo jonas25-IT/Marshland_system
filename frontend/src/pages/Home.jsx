@@ -1,260 +1,183 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Leaf, Users, Camera, Mail, Phone, MapPin, Menu, X } from 'lucide-react';
-import Logo from '../components/Logo';
+import { 
+  Leaf, ArrowRight, Shield, Globe, Users, 
+  BarChart3, Camera, Activity, CheckCircle2
+} from 'lucide-react';
 
 const Home = () => {
-  const { isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleGetStarted = () => {
-    if (isAuthenticated) {
-      // Redirect to appropriate dashboard
-      const roleDashboardMap = {
-        'ADMIN': '/dashboard/admin',
-        'ECOLOGIST': '/dashboard/ecologist',
-        'TOURIST': '/dashboard/tourist',
-        'STAFF': '/dashboard/staff',
-      };
-      
-      const userDashboard = roleDashboardMap[user.role] || '/dashboard/tourist';
-      navigate(userDashboard);
-    } else {
-      navigate('/login');
-    }
-  };
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#0D0E14] text-white font-sans overflow-x-hidden selection:bg-purple-500/30">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[50%] h-[50%] bg-emerald-600/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
       {/* Navigation */}
-      <nav className="glass-card fixed w-full top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Logo size="medium" variant="full" animated={true} />
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#about" className="text-gray-700 hover:text-primary-600 transition-colors">About</a>
-              <a href="#biodiversity" className="text-gray-700 hover:text-primary-600 transition-colors">Biodiversity</a>
-              <a href="#gallery" className="text-gray-700 hover:text-primary-600 transition-colors">Gallery</a>
-              <a href="#contact" className="text-gray-700 hover:text-primary-600 transition-colors">Contact</a>
-              
-              {isAuthenticated ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-700">Welcome, {user?.name || user?.email}!</span>
-                  <button
-                    onClick={handleGetStarted}
-                    className="btn-primary"
-                  >
-                    Dashboard
-                  </button>
-                </div>
-              ) : (
-                <div className="flex space-x-4">
-                  <Link to="/login" className="btn-primary">Login</Link>
-                  <Link to="/register" className="btn-secondary">Register</Link>
-                </div>
-              )}
-            </div>
-            
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="text-gray-700"
-              >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-            </div>
+      <nav className="relative z-20 flex justify-between items-center px-8 py-8 max-w-7xl mx-auto backdrop-blur-md sticky top-0 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl shadow-lg shadow-purple-500/20">
+            <Leaf className="w-6 h-6" />
           </div>
-          
-          {/* Mobile Navigation */}
-          {mobileMenuOpen && (
-            <div className="md:hidden mt-4 space-y-4">
-              <a href="#about" className="block text-gray-700 hover:text-primary-600">About</a>
-              <a href="#biodiversity" className="block text-gray-700 hover:text-primary-600">Biodiversity</a>
-              <a href="#gallery" className="block text-gray-700 hover:text-primary-600">Gallery</a>
-              <a href="#contact" className="block text-gray-700 hover:text-primary-600">Contact</a>
-              
-              {isAuthenticated ? (
-                <div className="space-y-2">
-                  <span className="block text-gray-700">Welcome, {user?.name || user?.email}!</span>
-                  <button
-                    onClick={handleGetStarted}
-                    className="btn-primary w-full"
-                  >
-                    Dashboard
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Link to="/login" className="btn-primary block w-full text-center">Login</Link>
-                  <Link to="/register" className="btn-secondary block w-full text-center">Register</Link>
-                </div>
-              )}
-            </div>
-          )}
+          <span className="text-2xl font-bold tracking-tighter text-glow">Marshland</span>
+        </div>
+        <div className="flex items-center gap-8">
+           <a href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Ecosystem</a>
+           <a href="#impact" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Impact</a>
+           {user ? (
+             <Link to="/dashboard" className="btn-premium btn-premium-primary text-xs !py-2 !px-6">Open Dashboard</Link>
+           ) : (
+             <div className="flex items-center gap-4">
+                <Link to="/login" className="text-sm font-bold hover:text-purple-400 transition-colors">Sign In</Link>
+                <Link to="/register" className="btn-premium btn-premium-primary text-xs !py-2 !px-6">Get Clearance</Link>
+             </div>
+           )}
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="hero-section h-screen flex items-center justify-center text-white" 
-               style={{ backgroundImage: 'linear-gradient(rgba(45, 80, 22, 0.8), rgba(139, 195, 74, 0.8)), url(https://images.unsplash.com/photo-1540206395-68808572332f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80)' }}>
-        <div className="container mx-auto px-6 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Welcome to Rugezi Marshland
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-            Discover the breathtaking biodiversity of one of Rwanda's most precious wetland ecosystems
-          </p>
-          <button
-            onClick={handleGetStarted}
-            className="btn-secondary text-lg px-8 py-4"
-          >
-            {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
-          </button>
+      <section className="relative z-10 pt-32 pb-20 px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] text-purple-400 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000">
+          <Activity className="w-3 h-3 animate-pulse" /> Live Monitoring Active
+        </div>
+        <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[0.9] tracking-tighter group animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+          Digital Heart of <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-emerald-400">Rugezi Marshland</span>
+        </h1>
+        <p className="max-w-2xl text-lg md:text-xl text-gray-400 font-light italic leading-relaxed mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+          The ultimate management console for Rwanda's precious wetland. <br className="hidden md:block" />
+          Predictive analytics, species inventory, and tourism orchestration.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-700">
+           <Link to="/register" className="btn-premium btn-premium-primary !py-5 !px-12 text-sm flex items-center gap-3 group">
+              Start Manifest <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+           </Link>
+           <button className="btn-premium btn-premium-secondary !py-5 !px-12 text-sm flex items-center gap-3">
+              Explore Wiki <Globe className="w-4 h-4" />
+           </button>
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-20">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-primary-800 mb-6">About Rugezi Marshland</h2>
-              <p className="text-gray-600 mb-4">
-                Rugezi Marshland is a vital wetland ecosystem located in the Northern Province of Rwanda. 
-                This pristine natural habitat serves as a crucial water catchment area and supports an incredible 
-                diversity of plant and animal species.
-              </p>
-              <p className="text-gray-600 mb-4">
-                Designated as a Ramsar Wetland of International Importance, Rugezi plays a essential role in 
-                climate regulation, water purification, and provides livelihood opportunities for local communities.
-              </p>
-              <p className="text-gray-600">
-                Our management system ensures sustainable tourism, conservation efforts, and educational programs 
-                to protect this invaluable natural treasure for future generations.
-              </p>
+      
+
+      {/* The Marshland Chronicle */}
+      <section id="impact" className="relative z-10 px-8 py-32 max-w-7xl mx-auto border-y border-white/5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
+          <div className="lg:col-span-4 sticky top-40 h-fit">
+            <h2 className="text-4xl font-black tracking-tighter uppercase leading-none mb-8">
+              The Marshland <br />
+              <span className="text-emerald-500 italic font-light">Chronicle</span>
+            </h2>
+            <div className="flex flex-col gap-4 text-xs font-black uppercase tracking-[0.2em] text-gray-500">
+               <a href="#geography" className="hover:text-white transition-colors flex items-center gap-2 group"><div className="w-2 h-2 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div> Geography</a>
+               <a href="#hydrology" className="hover:text-white transition-colors flex items-center gap-2 group"><div className="w-2 h-2 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div> Hydrology</a>
+               <a href="#flora" className="hover:text-white transition-colors flex items-center gap-2 group"><div className="w-2 h-2 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div> Flora & Fauna</a>
             </div>
-            <div className="glass-card p-8 rounded-xl">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary-600 mb-2">500+</div>
-                  <div className="text-gray-600">Bird Species</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary-600 mb-2">200+</div>
-                  <div className="text-gray-600">Plant Species</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary-600 mb-2">50+</div>
-                  <div className="text-gray-600">Mammal Species</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary-600 mb-2">1000+</div>
-                  <div className="text-gray-600">Annual Visitors</div>
-                </div>
+          </div>
+          
+          <div className="lg:col-span-8 space-y-32">
+            <div id="geography" className="space-y-8 group">
+               <span className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.4em]">Section 01 // Geography</span>
+               <h3 className="text-5xl font-black tracking-tight text-glow">The High Altitude Peat Bog</h3>
+               <p className="text-xl text-gray-400 font-light leading-relaxed">
+                 The Rugezi Marsh (also known as Ruhengeri Marsh) is a protected area in Rwanda, covering 6,735 hectares (16,640 acres). 
+                 The wetland is one of the primary <span className="text-white font-medium">headwaters of the Nile</span>, situated in the Northern Province 
+                 within the Buberuka Highlands. At 2,100 metres (6,900 ft), the marsh is a rare high-altitude peat bog.
+               </p>
+               <div className="glass-card-premium p-8 border-emerald-500/10">
+                 <p className="text-sm text-gray-500 leading-relaxed italic">
+                   "Rugezi developed from an accumulation of organic materials within a quartzite rock-trapping water depression. 
+                   In its natural state, it plays a significant ecological, hydrological, socio-economical, and historical role in Rwanda."
+                 </p>
+               </div>
+            </div>
+
+            <div id="hydrology" className="space-y-8 group">
+               <span className="text-blue-500 text-[10px] font-black uppercase tracking-[0.4em]">Section 02 // Hydrology</span>
+               <h3 className="text-5xl font-black tracking-tight text-glow">Earth's Kidneys</h3>
+               <p className="text-xl text-gray-400 font-light leading-relaxed">
+                 Commonly referred to as the <span className="text-white font-medium">"Earth Kidneys"</span>, the marsh functions as a regulating basin. 
+                 It moderates inflows and outflows, filtering water resources that flow into the downstream lakes of Bulera and Ruhondo.
+               </p>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
+                     <div className="text-3xl font-black mb-1">1,200mm</div>
+                     <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Avg. Annual Rainfall</div>
+                  </div>
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
+                     <div className="text-3xl font-black mb-1">6,735ha</div>
+                     <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Protected Surface Area</div>
+                  </div>
+               </div>
+            </div>
+
+            <div id="flora" className="space-y-8 group">
+               <span className="text-purple-500 text-[10px] font-black uppercase tracking-[0.4em]">Section 03 // Biodiversity</span>
+               <h3 className="text-5xl font-black tracking-tight text-glow">Avifauna & Papyrus</h3>
+               <p className="text-xl text-gray-400 font-light leading-relaxed">
+                 Recognized as an Important Bird Area (IBA) by BirdLife International, Rugezi is home to 43 species of resident birds. 
+                 The cohabitation of <span className="italic font-medium text-purple-400 underline decoration-purple-500/30 underline-offset-4">Bradypterus graueri</span> 
+                 and <span className="italic font-medium text-pink-400 underline decoration-pink-500/30 underline-offset-4">Bradypterus carpalis</span> is uniquely unusual.
+               </p>
+               <div className="space-y-4">
+                  {[
+                    'Grey Crowned Crane (Balearica regulorum) — Endangered',
+                    'Papyrus Gonolek (Laniarius mufumbiri) — Near Threatened',
+                    'Grauer\'s Swamp-Warbler (Bradypterus graueri) — Endangered',
+                    'Papyrus Yellow Warbler (Calamonastides gracilirostris) — Vulnerable'
+                  ].map((species, i) => (
+                    <div key={i} className="flex items-center gap-4 group/item cursor-default">
+                       <CheckCircle2 className="w-4 h-4 text-emerald-500 group-hover/item:scale-125 transition-transform" />
+                       <span className="text-sm font-medium text-gray-400 group-hover/item:text-white transition-colors">{species}</span>
+                    </div>
+                  ))}
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Metrics Section */}
+      <section id="features" className="relative z-10 px-8 py-32 max-w-7xl mx-auto">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {[
+              { t: 'Species Inventory', d: 'Global database of 250+ rare avian and flora species monitored in real-time.', i: Shield, c: 'text-purple-400' },
+              { t: 'Smart Bookings', d: 'Automated reservation flow with synchronized staff manifests and check-in logs.', i: BarChart3, c: 'text-blue-400' },
+              { t: 'Global Access', d: 'Multi-role portals for Tourists, Ecologists, and Admin Staff under one identity.', i: Users, c: 'text-emerald-400' }
+            ].map((f, i) => (
+              <div key={i} className="group cursor-default">
+                 <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-8 border border-white/10 group-hover:bg-white/10 transition-colors">
+                    <f.i className={`w-6 h-6 ${f.c}`} />
+                 </div>
+                 <h4 className="text-xl font-bold mb-4 tracking-tight">{f.t}</h4>
+                 <p className="text-gray-500 font-light leading-relaxed">{f.d}</p>
+                 <div className="h-px bg-gradient-to-r from-white/10 to-transparent mt-8 group-hover:from-purple-500/50 transition-all"></div>
               </div>
-            </div>
-          </div>
-        </div>
+            ))}
+         </div>
       </section>
 
-      {/* Biodiversity Section */}
-      <section id="biodiversity" className="py-20 bg-primary-50">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-primary-800 text-center mb-12">Biodiversity Highlights</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="glass-card p-6 rounded-xl text-center">
-              <div className="text-4xl mb-4">🦆</div>
-              <h3 className="text-xl font-semibold text-primary-700 mb-2">Water Birds</h3>
-              <p className="text-gray-600">Home to endangered species like the Grey Crowned Crane and various migratory birds</p>
+      {/* Footer */}
+      <footer className="relative z-10 py-20 px-8 border-t border-white/5">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+            <div className="flex items-center gap-3">
+               <div className="bg-white/5 p-2 rounded-xl">
+                  <Leaf className="w-5 h-5 text-emerald-400" />
+               </div>
+               <span className="font-bold tracking-tighter uppercase">Marshland Ecosystem</span>
             </div>
-            <div className="glass-card p-6 rounded-xl text-center">
-              <div className="text-4xl mb-4">🌾</div>
-              <h3 className="text-xl font-semibold text-primary-700 mb-2">Aquatic Plants</h3>
-              <p className="text-gray-600">Diverse wetland vegetation including papyrus reeds and water lilies</p>
+            <div className="flex gap-10 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+               <a href="#" className="hover:text-purple-400 transition-colors">Security</a>
+               <a href="#" className="hover:text-purple-400 transition-colors">API Docs</a>
+               <a href="#" className="hover:text-purple-400 transition-colors">Privacy</a>
             </div>
-            <div className="glass-card p-6 rounded-xl text-center">
-              <div className="text-4xl mb-4">🦌</div>
-              <h3 className="text-xl font-semibold text-primary-700 mb-2">Wildlife</h3>
-              <p className="text-gray-600">Supports mammals, amphibians, and countless invertebrate species</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Gallery Section */}
-      <section id="gallery" className="py-20">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-primary-800 text-center mb-12">Gallery</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="relative overflow-hidden rounded-xl">
-              <img src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
-                   alt="Marshland landscape" className="w-full h-64 object-cover hover:scale-110 transition-transform duration-300" />
-            </div>
-            <div className="relative overflow-hidden rounded-xl">
-              <img src="https://images.unsplash.com/photo-1552728089-57bdde3f8ff5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
-                   alt="Birds in marshland" className="w-full h-64 object-cover hover:scale-110 transition-transform duration-300" />
-            </div>
-            <div className="relative overflow-hidden rounded-xl">
-              <img src="https://images.unsplash.com/photo-1540206395-68808572332f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
-                   alt="Sunset over marshland" className="w-full h-64 object-cover hover:scale-110 transition-transform duration-300" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-20 bg-primary-50">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-primary-800 text-center mb-12">Contact Us</h2>
-          <div className="grid md:grid-cols-2 gap-12">
-            <div>
-              <h3 className="text-2xl font-semibold text-primary-700 mb-6">Get in Touch</h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <Mail className="h-5 w-5 text-primary-600 mr-3" />
-                  <span>info@rugezimarshland.rw</span>
-                </div>
-                <div className="flex items-center">
-                  <Phone className="h-5 w-5 text-primary-600 mr-3" />
-                  <span>+250 788 123 456</span>
-                </div>
-                <div className="flex items-center">
-                  <MapPin className="h-5 w-5 text-primary-600 mr-3" />
-                  <span>Northern Province, Rwanda</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-primary-700 mb-6">Send us a Message</h3>
-              <form className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  className="input-field"
-                />
-                <input
-                  type="email"
-                  placeholder="Your Email"
-                  className="input-field"
-                />
-                <textarea
-                  placeholder="Your Message"
-                  rows="4"
-                  className="input-field"
-                ></textarea>
-                <button type="submit" className="btn-primary w-full">
-                  Send Message
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
+            <p className="text-[10px] text-gray-700 font-bold">&copy; 2026 RUGEZI MARSHLAND SYSTEM</p>
+         </div>
+      </footer>
     </div>
   );
 };

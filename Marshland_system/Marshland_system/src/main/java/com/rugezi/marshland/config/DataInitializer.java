@@ -9,6 +9,7 @@ import com.rugezi.marshland.service.SpeciesService;
 import com.rugezi.marshland.service.UserService;
 import com.rugezi.marshland.service.VisitDateService;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -19,12 +20,14 @@ public class DataInitializer implements CommandLineRunner {
     private final UserService userService;
     private final SpeciesService speciesService;
     private final VisitDateService visitDateService;
+    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserService userService, SpeciesService speciesService,
-                           VisitDateService visitDateService) {
+                           VisitDateService visitDateService, PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.speciesService = speciesService;
         this.visitDateService = visitDateService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -37,16 +40,29 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeUsers() {
-        // Create users in user table since app_user was deleted
-        if (userService.findByEmail("admin@rugezi.rw").isEmpty()) {
-            User admin = new User();
+        // Create or Update Admin to ensure fresh credentials
+        User admin = userService.findByEmail("admin@rugezi.rw").orElse(null);
+        if (admin == null) {
+            admin = new User();
             admin.setEmail("admin@rugezi.rw");
-            admin.setPasswordHash("admin123");
             admin.setFirstName("Admin");
             admin.setLastName("Jonas");
             admin.setRole(UserRole.ADMIN);
             admin.setPhone("+250788123456");
+        }
+        
+        // Force reset password and activation status
+        admin.setPasswordHash("admin123");
+        admin.setIsActive(true);
+        
+        // We use a custom update or register that ensures hashing
+        if (admin.getUserId() == null) {
             userService.registerUser(admin);
+            System.out.println(">>> Admin account REGISTERED with fresh credentials");
+        } else {
+            // Manually re-hash and save for existing user to avoid skipping
+            userService.updateUser(admin.getUserId(), admin);
+            System.out.println(">>> Admin account SYNCHRONIZED with fresh credentials");
         }
 
         if (userService.findByEmail("ecologist@rugezi.rw").isEmpty()) {

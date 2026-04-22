@@ -157,13 +157,30 @@ public class SpeciesService {
                 .toList();
     }
     
+    @org.springframework.beans.factory.annotation.Value("${app.upload.dir}")
+    private String uploadDir;
+
     public String uploadSpeciesImage(Long speciesId, MultipartFile file, User user) throws IOException {
         Species species = getSpeciesById(speciesId);
-        // This would integrate with a file storage service
-        // For now, return a placeholder URL
-        String imageUrl = "/uploads/species/" + speciesId + "_" + file.getOriginalFilename();
+        
+        // Ensure directory exists
+        java.io.File directory = new java.io.File(uploadDir);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        // Generate unique filename
+        String fileName = speciesId + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        java.nio.file.Path filePath = java.nio.file.Paths.get(uploadDir, fileName);
+        
+        // Save file
+        java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+        // Update species record with the retrievable URL
+        String imageUrl = "http://localhost:8083/uploads/" + fileName;
         species.setImageUrl(imageUrl);
         speciesRepository.save(species);
+        
         return imageUrl;
     }
     

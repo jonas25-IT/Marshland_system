@@ -1,1189 +1,513 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Logo from '../components/Logo';
+import DashboardLayout, { StatCard, ActivityItem } from '../components/DashboardLayout';
 import { 
-  Users, 
-  UserCheck, 
-  UserX, 
-  Settings, 
-  BarChart3, 
-  TrendingUp, 
-  Activity, 
-  Calendar, 
-  FileText, 
-  Shield, 
-  AlertTriangle, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  Plus,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  LogOut,
-  Home,
-  Menu,
-  Bell,
-  Mail,
-  Phone,
-  Leaf, 
-  User, 
-  DollarSign,
-  Check,
-  X,
-  Image,
-  MessageSquare
+  Users, UserCheck, UserX, BarChart3, 
+  TrendingUp, Activity, Calendar, FileText, 
+  Shield, AlertTriangle, Eye, Edit, Trash2, 
+  Plus, Search, Filter, Download, RefreshCw,
+  Check, X, Image as ImageIcon, MessageSquare, Leaf
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import GalleryManagement from '../components/GalleryManagement';
 import FeedbackList from '../components/FeedbackList';
+import Settings from '../components/Settings';
+import Profile from '../components/Profile';
 
 const AdminDashboard = () => {
-  const { user, logout, api } = useAuth();
+  const { user, isAuthenticated, logout, api } = useAuth();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-
-  // Role-based styling
-  const getRoleColor = () => {
-    const roleColors = {
-      ADMIN: 'bg-purple-100 text-purple-800',
-      ECOLOGIST: 'bg-green-100 text-green-800',
-      TOURIST: 'bg-blue-100 text-blue-800',
-      STAFF: 'bg-orange-100 text-orange-800'
-    };
-    return roleColors[user?.role] || 'bg-gray-100 text-gray-800';
-  };
+  const [activeTab, setActiveTab] = useState('dashboard');
   
-  // CRUD state
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [species, setSpecies] = useState([]);
-  const [feedback, setFeedback] = useState([]);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showSpeciesModal, setShowSpeciesModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-
-  const loadDashboardData = useCallback(async () => {
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  
+  const loadData = useCallback(async () => {
     try {
-      // Debug: Check current user and authentication
+      setLoading(true);
+      
+      // Debug: Check authentication state
       console.log('Current user:', user);
       console.log('User role:', user?.role);
-      console.log('Is authenticated:', !!user);
+      console.log('Is authenticated:', isAuthenticated);
       
-      // Load dashboard overview
-      const dashboardResponse = await api.get('/admin/dashboard');
-      setDashboardData(dashboardResponse.data);
+      // Debug: Check JWT token
+      const token = localStorage.getItem('token');
+      console.log('Token exists:', !!token);
+      console.log('Token value:', token ? token.substring(0, 50) + '...' : 'null');
       
-      // Load all data for CRUD operations
-      const [usersResponse, bookingsResponse, speciesResponse, feedbackResponse] = await Promise.all([
-        api.get('/admin/users'),
-        api.get('/booking/all'),
-        api.get('/admin/species/all'),
-        api.get('/feedback')
-      ]);
-      
-      setUsers(usersResponse.data);
-      setBookings(bookingsResponse.data);
-      setSpecies(speciesResponse.data);
-      setFeedback(feedbackResponse.data);
-      
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-      
-      // Check if it's a 403 error (access denied)
-      if (error.response?.status === 403) {
-        console.warn('Access denied - User may not have ADMIN role');
-        // Show a user-friendly message for 403 errors
-        setDashboardData({
-          error: 'Access Denied',
-          message: 'You need admin privileges to access this dashboard.',
-          totalUsers: 0,
-          totalBookings: 0,
-          totalSpecies: 0,
-          pendingBookings: 0,
-          recentUsers: [],
-          recentBookings: [],
-          analytics: { userGrowth: 0, bookingGrowth: 0, speciesGrowth: 0, revenueGrowth: 0 }
-        });
-      } else {
-        // Set mock data as fallback for other errors
-        setDashboardData({
-          totalUsers: 150,
-          totalBookings: 89,
-          totalSpecies: 25,
-          pendingBookings: 12,
-          recentUsers: [
-            { id: 1, name: 'John Doe', email: 'john@example.com', role: 'TOURIST', dateJoined: '2026-03-15' },
-            { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'ECOLOGIST', dateJoined: '2026-03-14' },
-            { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'STAFF', dateJoined: '2026-03-13' },
-          ],
-          recentBookings: [
-            { id: 1, user: 'John Doe', visitDate: '2026-03-20', numberOfVisitors: 3, status: 'CONFIRMED' },
-            { id: 2, user: 'Jane Smith', visitDate: '2026-03-21', numberOfVisitors: 2, status: 'PENDING' },
-            { id: 3, user: 'Bob Johnson', visitDate: '2026-03-22', numberOfVisitors: 4, status: 'CONFIRMED' },
-          ],
-          analytics: {
-            userGrowth: 15,
-            bookingGrowth: 23,
-            speciesGrowth: 8,
-            revenueGrowth: 18
-          }
-        });
+      // Test authentication first
+      // Test authentication and get verified role from server
+      try {
+        const authTest = await api.get('/auth/profile');
+        console.log('Server verified user:', authTest.data);
+        
+        const serverRole = authTest.data.role || '';
+        const isAdmin = serverRole.toUpperCase().includes('ADMIN');
+        
+        if (!isAdmin) {
+          console.error('User lacks administrative authority:', serverRole);
+          toast.error('Access denied. Admin privileges required.');
+          navigate('/dashboard');
+          return;
+        }
+      } catch (error) {
+        console.error('Authority verification failed:', error);
+        if (error.response?.status === 403 || error.response?.status === 401) {
+          toast.error('Session out of sync. Re-authenticating...');
+          // Clear stale session data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setTimeout(() => {
+            navigate('/login');
+          }, 1500);
+        } else {
+          toast.error('Connectivity error during authority verification.');
+        }
+        return;
       }
-      setSpecies([
-        { id: 1, scientificName: 'Cyperus papyrus', commonName: 'Papyrus', type: 'FLORA', conservationStatus: 'Least Concern', description: 'A tall aquatic sedge that forms dense stands in wetlands.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 2, scientificName: 'Phragmites australis', commonName: 'Common Reed', type: 'FLORA', conservationStatus: 'Least Concern', description: 'A widespread perennial grass found in wetlands.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 3, scientificName: 'Typha domingensis', commonName: 'Southern Cattail', type: 'FLORA', conservationStatus: 'Least Concern', description: 'A marsh plant with distinctive brown flower spikes.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 4, scientificName: 'Nymphaea lotus', commonName: 'White Water Lily', type: 'FLORA', conservationStatus: 'Least Concern', description: 'Beautiful aquatic plant with floating leaves.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 5, scientificName: 'Balearica regulorum', commonName: 'Grey Crowned Crane', type: 'FAUNA', conservationStatus: 'Endangered', description: 'An iconic bird species with distinctive golden crown.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 6, scientificName: 'Ardea cinerea', commonName: 'Grey Heron', type: 'FAUNA', conservationStatus: 'Least Concern', description: 'A large wading bird commonly found in wetlands.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 7, scientificName: 'Anas platyrhynchos', commonName: 'Mallard', type: 'FAUNA', conservationStatus: 'Least Concern', description: 'One of the most recognizable duck species.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 8, scientificName: 'Haliaeetus vociferoides', commonName: 'African Fish Eagle', type: 'FAUNA', conservationStatus: 'Vulnerable', description: 'Magnificent raptor with distinctive white head.', addedBy: 'Admin', dateAdded: '2026-02-25' },
-        { id: 9, scientificName: 'Ciconia ciconia', commonName: 'White Stork', type: 'FAUNA', conservationStatus: 'Least Concern', description: 'Large migratory bird known for its long-distance migrations.', addedBy: 'Admin', dateAdded: '2026-02-25' },
+      
+      const [dbRes, usersRes, bookingsRes, speciesRes] = await Promise.all([
+        api.get('/admin/dashboard'),
+        api.get('/admin/users'),
+        api.get('/admin/bookings/all'),
+        api.get('/admin/species/all')
       ]);
+      
+      // Extract data safely regardless of wrapping
+      const getListData = (res) => res.data?.data || res.data || [];
+      
+      setDashboardData(dbRes.data);
+      setUsers(getListData(usersRes));
+      setBookings(getListData(bookingsRes));
+      setSpecies(getListData(speciesRes));
+    } catch (error) {
+      console.error('Data load failed:', error);
+      console.error('Error details:', error.response?.status, error.response?.data);
+      
+      if (error.response?.status === 403) {
+        toast.error('Access denied. You may not have admin privileges.');
+        console.error('403 Forbidden - User may not have ADMIN role');
+        // Don't auto-redirect for debugging
+      } else if (error.response?.status === 401) {
+        toast.error('Session expired. Please log in again.');
+        console.error('401 Unauthorized - Session expired');
+        // Don't auto-redirect for debugging
+      } else {
+        toast.error('System synchronization failed. Verify database connectivity.');
+      }
+      setDashboardData(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    loadData();
+  }, [loadData]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  // CRUD Operations
-  const handleCreateUser = async (userData) => {
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm('Delete this user?')) return;
     try {
-      await api.post('/admin/users', userData);
-      await loadDashboardData(); // Refresh dashboard stats
-      setShowUserModal(false);
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Failed to create user:', error);
-      alert('Failed to create user: ' + error.response?.data?.error || error.message);
-    }
+      await api.delete(`/admin/users/${id}`);
+      toast.success('User removed');
+      loadData();
+    } catch (e) { toast.error('Action failed'); }
   };
 
-  const handleEditUser = async (userData) => {
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
     try {
-      await api.put(`/admin/users/${userData.id}`, userData);
-      await loadDashboardData(); // Refresh dashboard stats
-      setShowUserModal(false);
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Failed to update user:', error);
-      alert('Failed to update user: ' + error.response?.data?.error || error.message);
-    }
-  };
-
-  const handleApproveUser = async (userId) => {
-    try {
-      await api.post(`/admin/users/${userId}/approve`);
-      setUsers(users.map(user => 
-        user.userId === userId ? { ...user, isActive: true } : user
-      ));
-      await loadDashboardData(); // Refresh dashboard stats
-    } catch (error) {
-      console.error('Failed to approve user:', error);
-      alert('Failed to approve user: ' + error.response?.data?.error || error.message);
-    }
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await api.delete(`/admin/users/${userId}`);
-        setUsers(users.filter(user => user.userId !== userId));
-        await loadDashboardData(); // Refresh dashboard stats
-      } catch (error) {
-        console.error('Failed to delete user:', error);
+      if (editingUser) {
+        await api.put(`/admin/users/${editingUser.userId}`, data);
+        toast.success('Identity updated');
+      } else {
+        await api.post('/admin/users', data);
+        toast.success('New member registered');
       }
-    }
+      setIsUserModalOpen(false);
+      setEditingUser(null);
+      loadData();
+    } catch (e) { toast.error('Identity forge failed'); }
   };
 
-  const handleApproveBooking = async (bookingId) => {
+  const handleApproveBooking = async (id) => {
     try {
-      await api.post(`/booking/${bookingId}/approve`);
-      setBookings(bookings.map(booking => 
-        booking.id === bookingId ? { ...booking, status: 'APPROVED' } : booking
-      ));
-      await loadDashboardData(); // Refresh dashboard stats
-    } catch (error) {
-      console.error('Failed to approve booking:', error);
-    }
+      await api.post(`/admin/bookings/${id}/approve`);
+      toast.success('Protocol: Booking Approved');
+      loadData();
+    } catch (e) { toast.error('Decision failed'); }
   };
 
-  const handleRejectBooking = async (bookingId) => {
+  const handleRejectBooking = async (id) => {
     try {
-      await api.post(`/booking/${bookingId}/reject`);
-      setBookings(bookings.map(booking => 
-        booking.id === bookingId ? { ...booking, status: 'REJECTED' } : booking
-      ));
-      await loadDashboardData(); // Refresh dashboard stats
-    } catch (error) {
-      console.error('Failed to reject booking:', error);
-    }
+      await api.post(`/admin/bookings/${id}/reject`, { reason: 'Policy non-compliance' });
+      toast.error('Protocol: Booking Rejected');
+      loadData();
+    } catch (e) { toast.error('Decision failed'); }
   };
 
-  const handleDeleteSpecies = async (speciesId) => {
-    if (window.confirm('Are you sure you want to delete this species?')) {
-      try {
-        await api.delete(`/admin/species/${speciesId}`);
-        setSpecies(species.filter(spec => spec.speciesId !== speciesId));
-        await loadDashboardData(); // Refresh dashboard stats
-      } catch (error) {
-        console.error('Failed to delete species:', error);
-      }
-    }
-  };
-
-  // Booking CRUD Operations
-  const handleCreateBooking = async (bookingData) => {
-    try {
-      await api.post('/admin/bookings', bookingData);
-      await loadDashboardData(); // Refresh dashboard stats
-      setShowBookingModal(false);
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Failed to create booking:', error);
-      alert('Failed to create booking: ' + error.response?.data?.error || error.message);
-    }
-  };
-
-  const handleEditBooking = async (bookingData) => {
-    try {
-      await api.put(`/admin/bookings/${bookingData.bookingId}`, bookingData);
-      await loadDashboardData(); // Refresh dashboard stats
-      setShowBookingModal(false);
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Failed to update booking:', error);
-      alert('Failed to update booking: ' + error.response?.data?.error || error.message);
-    }
-  };
-
-  const handleDeleteBooking = async (bookingId) => {
-    if (window.confirm('Are you sure you want to delete this booking?')) {
-      try {
-        await api.delete(`/admin/bookings/${bookingId}`);
-        setBookings(bookings.filter(booking => booking.bookingId !== bookingId));
-        await loadDashboardData(); // Refresh dashboard stats
-      } catch (error) {
-        console.error('Failed to delete booking:', error);
-        alert('Failed to delete booking: ' + error.response?.data?.error || error.message);
-      }
-    }
-  };
-
-  // Species CRUD Operations
-  const handleCreateSpecies = async (speciesData) => {
-    try {
-      await api.post('/admin/species/create', speciesData);
-      await loadDashboardData(); // Refresh dashboard stats
-      setShowSpeciesModal(false);
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Failed to create species:', error);
-      alert('Failed to create species: ' + error.response?.data?.error || error.message);
-    }
-  };
-
-  const handleEditSpecies = async (speciesData) => {
-    try {
-      await api.put(`/admin/species/${speciesData.speciesId}`, speciesData);
-      await loadDashboardData(); // Refresh dashboard stats
-      setShowSpeciesModal(false);
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Failed to update species:', error);
-      alert('Failed to update species: ' + error.response?.data?.error || error.message);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  if (loading && !dashboardData) return (
+    <div className="min-h-screen bg-[#0D0E14] flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="glass-card">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Logo size="medium" variant="icon-only" />
-              <h1 className="text-2xl font-bold text-primary-800 ml-3">Admin Dashboard</h1>
+    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <div className="space-y-10 animate-in fade-in duration-500">
+        
+        {/* Main Dashboard Overview */}
+        {activeTab === 'dashboard' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard title="Total Users" value={dashboardData?.totalUsers || 0} change="+12%" icon={Users} color="text-purple-400" />
+              <StatCard title="Active Bookings" value={dashboardData?.totalBookings || 0} change="+5%" icon={Calendar} color="text-blue-400" />
+              <StatCard title="Biodiversity" value={dashboardData?.totalSpecies || 0} change="+2%" icon={Leaf} color="text-emerald-400" />
+              <StatCard title="Pending Review" value={dashboardData?.pendingBookings || 0} change="-4%" icon={AlertTriangle} color="text-orange-400" />
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user?.name || user?.email}</span>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor()}`}>
-                {user?.role}
-              </span>
-              <button
-                onClick={() => navigate('/')}
-                className="btn-outline"
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mt-12">
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-500" /> Platform Growth
+                </h3>
+                <div className="h-64 flex items-end gap-5 px-4 mb-4">
+                  {[35, 65, 45, 85, 60, 75, 95, 55, 80, 100].map((h, i) => (
+                    <div key={i} className="flex-1 bg-white/5 rounded-t-xl relative group transition-all">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-600/80 to-pink-500/80 rounded-t-xl group-hover:from-purple-500 group-hover:to-pink-400 transition-all shadow-[0_0_15px_rgba(139,92,246,0.1)]" style={{ height: `${h}%` }}></div>
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
+                        {Math.floor(h * 1.5)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between px-2 text-[9px] text-gray-500 font-black uppercase tracking-widest">
+                  <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
+                </div>
+              </div>
+
+              <div className="glass-card-premium p-8 overflow-hidden relative">
+                <div className="flex justify-between items-center mb-10">
+                   <h3 className="text-xl font-bold flex items-center gap-2">
+                     <Activity className="w-5 h-5 text-pink-500" /> System Activity Tracking
+                   </h3>
+                   <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-tighter border border-emerald-500/20 rounded-lg">Live Monitoring</span>
+                </div>
+                
+                <div className="space-y-0 relative">
+                   {/* Vertical tracking line */}
+                   <div className="absolute left-[23px] top-4 bottom-4 w-[2px] bg-gradient-to-b from-purple-500/50 via-pink-500/50 to-transparent"></div>
+                   
+                   <div className="space-y-10">
+                      {(dashboardData?.recentUsers || []).slice(0, 3).map((u) => (
+                        <div key={`user-${u.id || u.userId}`} className="relative pl-14 group">
+                           <div className="absolute left-4 top-1 w-5 h-5 rounded-full bg-[#0D0E14] border-2 border-purple-500 z-10 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-transform group-hover:scale-125"></div>
+                           <div className="flex flex-col">
+                              <span className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">New Identity Registered</span>
+                              <p className="text-sm font-bold text-white tracking-tight">{u.firstName} {u.lastName} <span className="text-gray-500 font-normal">authorized as</span> <span className="text-purple-400">{u.role}</span></p>
+                              <p className="text-[10px] text-gray-600 mt-1 font-mono italic">Database ID: {u.userId || u.id}</p>
+                           </div>
+                        </div>
+                      ))}
+                      
+                      {bookings.slice(0, 2).map((b) => (
+                        <div key={`booking-${b.bookingId || b.id}`} className="relative pl-14 group">
+                           <div className="absolute left-4 top-1 w-5 h-5 rounded-full bg-[#0D0E14] border-2 border-pink-500 z-10 shadow-[0_0_8px_rgba(236,72,153,0.4)] transition-transform group-hover:scale-125"></div>
+                           <div className="flex flex-col">
+                              <span className="text-xs text-pink-500/70 font-bold uppercase tracking-widest mb-1">Reservation Protocol {b.bookingStatus}</span>
+                              <p className="text-sm font-bold text-white tracking-tight">Booking #{b.bookingId} <span className="text-gray-500 font-normal">for</span> {b.user?.firstName} <span className="text-gray-500 font-normal">verified.</span></p>
+                              <p className="text-[10px] text-gray-600 mt-1 font-mono italic">Location: Central Marshland Cluster</p>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+
+                   {(!dashboardData?.recentUsers || (dashboardData.recentUsers.length === 0 && bookings.length === 0)) && (
+                     <p className="text-gray-500 text-center py-10 italic">Awaiting system activities...</p>
+                   )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Users Management */}
+        {activeTab === 'users' && (
+          <div className="glass-card-premium overflow-hidden">
+            <div className="p-8 border-b border-white/5 flex justify-between items-center">
+              <h2 className="text-2xl font-bold tracking-tight">Access Control</h2>
+              <button 
+                onClick={() => { setEditingUser(null); setIsUserModalOpen(true); }}
+                className="btn-premium btn-premium-primary"
               >
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </button>
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                <Plus className="w-4 h-4" /> Add Member
               </button>
             </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white/[0.02] text-[10px] font-bold uppercase text-gray-500 tracking-widest">
+                    <th className="p-6">Profile</th>
+                    <th className="p-6">Authorized Role</th>
+                    <th className="p-6">Status</th>
+                    <th className="p-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {users.map(u => (
+                    <tr key={u.userId} className="hover:bg-white/[0.01] transition-colors border-l-2 border-transparent hover:border-purple-500">
+                      <td className="p-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500/20 to-pink-500/20 flex items-center justify-center text-purple-400 font-bold border border-purple-500/10">
+                            {u.firstName?.[0]}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-200">{u.firstName} {u.lastName}</p>
+                            <p className="text-xs text-gray-500 font-light italic">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-6">
+                        <span className="px-3 py-1 bg-white/5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-purple-400 border border-purple-500/10">
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="p-6">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${u.isActive ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></span>
+                          <span className="text-sm font-medium">{u.isActive ? 'Active' : 'Suspended'}</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => { setEditingUser(u); setIsUserModalOpen(true); }}
+                            className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white transition-all"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteUser(u.userId)} className="p-2 hover:bg-red-500/10 rounded-lg text-gray-500 hover:text-red-400 transition-all"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Bookings Management */}
+        {activeTab === 'bookings' && (
+          <div className="glass-card-premium overflow-hidden">
+             <div className="p-8 border-b border-white/5 flex justify-between items-center">
+              <h2 className="text-2xl font-bold tracking-tight">Global Reservations</h2>
+              <div className="flex gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input className="bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-purple-500/30" placeholder="Global search..." />
+                </div>
+                <button className="btn-premium btn-premium-secondary"><Filter className="w-4 h-4" /> Advanced</button>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white/[0.02] text-[10px] font-bold uppercase text-gray-500 tracking-widest">
+                    <th className="p-6">Primary Guest</th>
+                    <th className="p-6">Visit Schedule</th>
+                    <th className="p-6">Group Size</th>
+                    <th className="p-6">Status</th>
+                    <th className="p-6 text-right">Decision</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {bookings.map(b => (
+                    <tr key={b.bookingId} className="hover:bg-white/[0.01] transition-colors border-l-2 border-transparent hover:border-blue-500">
+                      <td className="p-6">
+                        <p className="font-semibold text-gray-200">{b.user?.firstName} {b.user?.lastName}</p>
+                        <p className="text-[10px] text-gray-500">{b.user?.email}</p>
+                      </td>
+                      <td className="p-6">
+                        <div className="flex items-center gap-2 text-sm text-gray-300">
+                           <Calendar className="w-3 h-3 text-blue-500" />
+                           {new Date(b.visitDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      </td>
+                      <td className="p-6 text-sm font-light">{b.numberOfVisitors} Pax</td>
+                      <td className="p-6">
+                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-tighter ${
+                          b.bookingStatus === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                          b.bookingStatus === 'PENDING' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 
+                          'bg-red-500/10 text-red-400 border border-red-500/20'
+                        }`}>
+                          {b.bookingStatus}
+                        </span>
+                      </td>
+                      <td className="p-6 text-right">
+                        {b.bookingStatus === 'PENDING' ? (
+                          <div className="flex justify-end gap-3">
+                             <button onClick={() => handleApproveBooking(b.bookingId)} className="w-8 h-8 flex items-center justify-center bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition-all shadow-lg hover:shadow-emerald-500/10"><Check className="w-4 h-4" /></button>
+                             <button onClick={() => handleRejectBooking(b.bookingId)} className="w-8 h-8 flex items-center justify-center bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all shadow-lg hover:shadow-red-500/10"><X className="w-4 h-4" /></button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-600 italic">Decision Made</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Species Management */}
+        {activeTab === 'species' && (
+          <div className="glass-card-premium overflow-hidden">
+             <div className="p-8 border-b border-white/5 flex justify-between items-center">
+              <h2 className="text-2xl font-bold tracking-tight">Biodiversity Inventory</h2>
+              <button className="btn-premium btn-premium-primary"><Plus className="w-4 h-4" /> Register Species</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white/[0.02] text-[10px] font-bold uppercase text-gray-500 tracking-widest">
+                    <th className="p-6">Species Fragment</th>
+                    <th className="p-6">Scientific Classification</th>
+                    <th className="p-6">Conservation</th>
+                    <th className="p-6 text-right">Operational Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {species.map(s => (
+                    <tr key={s.speciesId} className="hover:bg-white/[0.01] transition-colors">
+                      <td className="p-6">
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-xl bg-white/5 overflow-hidden border border-white/10">
+                              <img src={s.imageUrl || `https://source.unsplash.com/100x100/?nature,${s.commonName}`} className="w-full h-full object-cover" alt="" />
+                           </div>
+                           <p className="font-bold text-gray-200">{s.commonName}</p>
+                        </div>
+                      </td>
+                      <td className="p-6 text-xs text-gray-500 italic uppercase tracking-tighter">
+                        {s.scientificName} • {s.type}
+                      </td>
+                      <td className="p-6">
+                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${
+                          s.conservationStatus === 'Endangered' ? 'bg-pink-500/10 text-pink-400' : 'bg-emerald-500/10 text-emerald-400'
+                        }`}>
+                          {s.conservationStatus}
+                        </span>
+                      </td>
+                      <td className="p-6 text-right">
+                         <div className="flex justify-end gap-2 text-gray-500">
+                            <button className="p-2 hover:bg-white/10 rounded-lg"><Edit className="w-4 h-4" /></button>
+                            <button className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* System Reports */}
+        {activeTab === 'reports' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { t: 'User Activity', d: 'Comprehensive logs of user logins and role transitions.', i: Users, c: 'text-purple-400' },
+              { t: 'Revenue Stream', d: 'Monthly analysis of tour bookings and tourism revenue.', i: TrendingUp, c: 'text-emerald-400' },
+              { t: 'System Health', d: 'Server uptime and database connectivity metrics.', i: Activity, c: 'text-blue-400' }
+            ].map((r, i) => (
+              <div key={i} className="glass-card-premium p-8 group hover:scale-105 transition-all cursor-pointer">
+                <r.i className={`w-10 h-10 mb-6 ${r.c}`} />
+                <h3 className="text-lg font-bold mb-2">{r.t}</h3>
+                <p className="text-sm text-gray-500 font-light leading-relaxed mb-6">{r.d}</p>
+                <button className="text-purple-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
+                  Generate PDF <RefreshCw className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* User Profile */}
+        {activeTab === 'profile' && <Profile />}
+
+        {/* Global Settings */}
+        {activeTab === 'settings' && <Settings />}
+      </div>
+
+      {/* User Forge Modal */}
+      {isUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsUserModalOpen(false)}></div>
+          <div className="relative glass-card-premium w-full max-w-md p-8 shadow-2xl animate-in zoom-in duration-300">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Shield className="text-purple-500" />
+                {editingUser ? 'Update Authority' : 'Forge New Identity'}
+              </h3>
+              <button onClick={() => setIsUserModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full"><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={handleSaveUser} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">First Name</label>
+                  <input name="firstName" defaultValue={editingUser?.firstName} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-purple-500 outline-none" required />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Last Name</label>
+                  <input name="lastName" defaultValue={editingUser?.lastName} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-purple-500 outline-none" required />
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email Address</label>
+                <input name="email" defaultValue={editingUser?.email} type="email" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-purple-500 outline-none" required />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Security Role</label>
+                <select name="role" defaultValue={editingUser?.role || 'TOURIST'} className="w-full bg-[#1A1C26] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-purple-500 outline-none">
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="ECOLOGIST">ECOLOGIST</option>
+                  <option value="STAFF">STAFF</option>
+                  <option value="TOURIST">TOURIST</option>
+                </select>
+              </div>
+
+              {!editingUser && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Password</label>
+                  <input name="password" type="password" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-purple-500 outline-none" required />
+                </div>
+              )}
+
+              <div className="pt-4 flex gap-4">
+                <button type="button" onClick={() => setIsUserModalOpen(false)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
+                <button type="submit" className="flex-1 btn-premium btn-premium-primary">
+                  {editingUser ? 'Commit Sync' : 'Finalize Forge'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        {/* Welcome Section */}
-        <section className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Welcome, Admin!</h2>
-          <p className="text-gray-600">Manage the Rugezi Marshland system</p>
-        </section>
-
-        {/* Access Denied Warning */}
-        {dashboardData?.error && (
-          <section className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
-            <div className="flex items-center">
-              <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
-              <div>
-                <h3 className="text-lg font-semibold text-red-800">{dashboardData.error}</h3>
-                <p className="text-red-600">{dashboardData.message}</p>
-                <p className="text-sm text-red-500 mt-2">
-                  Current role: {user?.role || 'Unknown'} | Please contact an administrator if you believe this is an error.
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Stats Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Total Users</h3>
-                <p className="text-3xl font-bold text-primary-800">{dashboardData?.totalUsers || 0}</p>
-              </div>
-              <Users className="h-8 w-8 text-primary-600" />
-            </div>
-          </div>
-          
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Total Bookings</h3>
-                <p className="text-3xl font-bold text-blue-600">{dashboardData?.totalBookings || 0}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
-          
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Species</h3>
-                <p className="text-3xl font-bold text-green-600">{dashboardData?.totalSpecies || 0}</p>
-              </div>
-              <Leaf className="h-8 w-8 text-green-600" />
-            </div>
-          </div>
-          
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Pending</h3>
-                <p className="text-3xl font-bold text-orange-600">{dashboardData?.pendingBookings || 0}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-orange-600" />
-            </div>
-          </div>
-        </section>
-
-        {/* Quick Actions */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <Users className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Manage Users</h3>
-            <p className="text-sm text-gray-600">Add, edit, remove users</p>
-          </button>
-          
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <Calendar className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Manage Bookings</h3>
-            <p className="text-sm text-gray-600">Approve, reject bookings</p>
-          </button>
-          
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <Leaf className="h-12 w-12 text-green-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Manage Species</h3>
-            <p className="text-sm text-gray-600">Add, edit species data</p>
-          </button>
-          
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <BarChart3 className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">View Reports</h3>
-            <p className="text-sm text-gray-600">Analytics & insights</p>
-          </button>
-        </section>
-
-        {/* Tab Navigation */}
-        <section className="glass-card p-6 mb-8">
-          <div className="flex space-x-6 border-b border-gray-200 mb-6">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'overview'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'users'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Users Management
-            </button>
-            <button
-              onClick={() => setActiveTab('bookings')}
-              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'bookings'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Bookings Management
-            </button>
-            <button
-              onClick={() => setActiveTab('species')}
-              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'species'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Species Management
-            </button>
-            <button
-              onClick={() => setActiveTab('gallery')}
-              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'gallery'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Gallery Management
-            </button>
-            <button
-              onClick={() => setActiveTab('feedback')}
-              className={`pb-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'feedback'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Feedback Management
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Recent Users */}
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Users</h3>
-                <div className="space-y-3">
-                  {dashboardData?.recentUsers?.map((user) => (
-                    <div key={`user-${user.id}-${user.email}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-semibold text-gray-800">{user.name}</p>
-                        <p className="text-sm text-gray-600">{user.email}</p>
-                        <p className="text-xs text-gray-500">Role: {user.role}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">{user.createdAt}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Bookings */}
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Bookings</h3>
-                <div className="space-y-3">
-                  {dashboardData?.recentBookings?.map((booking) => (
-                    <div key={`booking-${booking.id}-${booking.user}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-semibold text-gray-800">{booking.user}</p>
-                        <p className="text-sm text-gray-600">{booking.visitDate} • {booking.numberOfVisitors} visitors</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`text-sm font-medium ${
-                          booking.status === 'APPROVED' ? 'text-green-600' : 
-                          booking.status === 'PENDING' ? 'text-yellow-600' : 
-                          'text-red-600'
-                        }`}>
-                          {booking.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'users' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Users Management</h3>
-                <button 
-                  onClick={() => setShowUserModal(true)}
-                  className="btn-primary flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add User
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user.userId}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.registrationDate ? new Date(user.registrationDate).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            {!user.isActive && (
-                              <button
-                                onClick={() => handleApproveUser(user.userId)}
-                                className="text-green-600 hover:text-green-900"
-                              >
-                                <Check className="h-4 w-4" />
-                              </button>
-                            )}
-                            <button 
-                              onClick={() => {
-                                setEditingItem({...user, id: user.userId});
-                                setShowUserModal(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user.userId)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'bookings' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Bookings Management</h3>
-                <button 
-                  onClick={() => setShowBookingModal(true)}
-                  className="btn-primary flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Booking
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visitors</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {bookings.map((booking) => (
-                      <tr key={booking.bookingId}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{booking.user?.firstName} {booking.user?.lastName}</div>
-                          <div className="text-sm text-gray-500">{booking.user?.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {booking.visitDate ? new Date(booking.visitDate).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {booking.numberOfVisitors}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {booking.specialRequests || 'None'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            booking.bookingStatus === 'APPROVED' ? 'bg-green-100 text-green-800' : 
-                            booking.bookingStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
-                            booking.bookingStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {booking.bookingStatus}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            {booking.bookingStatus === 'PENDING' && (
-                              <>
-                                <button
-                                  onClick={() => handleApproveBooking(booking.bookingId)}
-                                  className="text-green-600 hover:text-green-900"
-                                >
-                                  <Check className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleRejectBooking(booking.bookingId)}
-                                  className="text-red-600 hover:text-red-900"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
-                            <button 
-                              onClick={() => {
-                                setEditingItem({...booking, id: booking.bookingId});
-                                setShowBookingModal(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBooking(booking.bookingId)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'species' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Species Management</h3>
-                <button 
-                  onClick={() => setShowSpeciesModal(true)}
-                  className="btn-primary flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Species
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scientific Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Common Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conservation Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {species.map((spec) => (
-                      <tr key={spec.speciesId}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {spec.scientificName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {spec.commonName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                            {spec.type}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            spec.conservationStatus === 'Endangered' ? 'bg-red-100 text-red-800' : 
-                            spec.conservationStatus === 'Vulnerable' ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            {spec.conservationStatus}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => {
-                                setEditingItem({...spec, id: spec.speciesId});
-                                setShowSpeciesModal(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteSpecies(spec.speciesId)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'gallery' && (
-            <div>
-              <GalleryManagement />
-            </div>
-          )}
-
-          {activeTab === 'feedback' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Feedback Management</h3>
-                <div className="text-sm text-gray-600">
-                  Total Feedback: {feedback.length}
-                </div>
-              </div>
-              <FeedbackList 
-                feedbacks={feedback} 
-                loading={loading}
-                showUser={true}
-              />
-            </div>
-          )}
-        </section>
-        
-        {/* User Modal */}
-        {showUserModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3 text-center">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  {editingItem ? 'Edit User' : 'Create New User'}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowUserModal(false);
-                    setEditingItem(null);
-                  }}
-                  type="button"
-                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const userData = {
-                  firstName: formData.get('firstName'),
-                  lastName: formData.get('lastName'),
-                  email: formData.get('email'),
-                  role: formData.get('role'),
-                  password: formData.get('password'),
-                  phone: formData.get('phone')
-                };
-                
-                if (editingItem) {
-                  handleEditUser({ ...userData, id: editingItem.id });
-                } else {
-                  handleCreateUser(userData);
-                }
-              }} className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    id="firstName"
-                    defaultValue={editingItem?.firstName || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    id="lastName"
-                    defaultValue={editingItem?.lastName || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    defaultValue={editingItem?.email || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">Role</label>
-                  <select
-                    name="role"
-                    id="role"
-                    defaultValue={editingItem?.role || 'TOURIST'}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  >
-                    <option value="ADMIN">Admin</option>
-                    <option value="ECOLOGIST">Ecologist</option>
-                    <option value="TOURIST">Tourist</option>
-                    <option value="STAFF">Staff</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    id="phone"
-                    defaultValue={editingItem?.phone || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
-                {!editingItem && (
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                    <input
-                      type="password"
-                      name="password"
-                      id="password"
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                      placeholder="Enter password for new user"
-                    />
-                  </div>
-                )}
-                <div className="flex justify-end space-x-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowUserModal(false);
-                      setEditingItem(null);
-                    }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md"
-                  >
-                    {editingItem ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Booking Modal */}
-        {showBookingModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3 text-center">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  {editingItem ? 'Edit Booking' : 'Create New Booking'}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowBookingModal(false);
-                    setEditingItem(null);
-                  }}
-                  type="button"
-                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const bookingData = {
-                  numberOfVisitors: parseInt(formData.get('numberOfVisitors')),
-                  specialRequests: formData.get('specialRequests'),
-                  visitDate: formData.get('visitDate')
-                };
-                
-                if (editingItem) {
-                  handleEditBooking({ ...bookingData, bookingId: editingItem.id });
-                } else {
-                  handleCreateBooking(bookingData);
-                }
-              }} className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="numberOfVisitors" className="block text-sm font-medium text-gray-700">Number of Visitors</label>
-                  <input
-                    type="number"
-                    name="numberOfVisitors"
-                    id="numberOfVisitors"
-                    defaultValue={editingItem?.numberOfVisitors || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="visitDate" className="block text-sm font-medium text-gray-700">Visit Date</label>
-                  <input
-                    type="date"
-                    name="visitDate"
-                    id="visitDate"
-                    defaultValue={editingItem?.visitDate || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700">Special Requests</label>
-                  <textarea
-                    name="specialRequests"
-                    id="specialRequests"
-                    defaultValue={editingItem?.specialRequests || ''}
-                    rows={3}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    placeholder="Optional special requests"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowBookingModal(false);
-                      setEditingItem(null);
-                    }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md"
-                  >
-                    {editingItem ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Species Modal */}
-        {showSpeciesModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3 text-center">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  {editingItem ? 'Edit Species' : 'Add New Species'}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowSpeciesModal(false);
-                    setEditingItem(null);
-                  }}
-                  type="button"
-                  className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const speciesData = {
-                  scientificName: formData.get('scientificName'),
-                  commonName: formData.get('commonName'),
-                  type: formData.get('type'),
-                  conservationStatus: formData.get('conservationStatus'),
-                  description: formData.get('description'),
-                  habitat: formData.get('habitat')
-                };
-                
-                if (editingItem) {
-                  handleEditSpecies({ ...speciesData, speciesId: editingItem.id });
-                } else {
-                  handleCreateSpecies(speciesData);
-                }
-              }} className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="scientificName" className="block text-sm font-medium text-gray-700">Scientific Name</label>
-                  <input
-                    type="text"
-                    name="scientificName"
-                    id="scientificName"
-                    defaultValue={editingItem?.scientificName || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="commonName" className="block text-sm font-medium text-gray-700">Common Name</label>
-                  <input
-                    type="text"
-                    name="commonName"
-                    id="commonName"
-                    defaultValue={editingItem?.commonName || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="type" className="block text-sm font-medium text-gray-700">Type</label>
-                  <select
-                    name="type"
-                    id="type"
-                    defaultValue={editingItem?.type || 'FLORA'}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  >
-                    <option value="FLORA">Flora</option>
-                    <option value="FAUNA">Fauna</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="conservationStatus" className="block text-sm font-medium text-gray-700">Conservation Status</label>
-                  <select
-                    name="conservationStatus"
-                    id="conservationStatus"
-                    defaultValue={editingItem?.conservationStatus || 'Least Concern'}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    required
-                  >
-                    <option value="Least Concern">Least Concern</option>
-                    <option value="Near Threatened">Near Threatened</option>
-                    <option value="Vulnerable">Vulnerable</option>
-                    <option value="Endangered">Endangered</option>
-                    <option value="Critically Endangered">Critically Endangered</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="habitat" className="block text-sm font-medium text-gray-700">Habitat</label>
-                  <input
-                    type="text"
-                    name="habitat"
-                    id="habitat"
-                    defaultValue={editingItem?.habitat || ''}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    placeholder="e.g., Wetland, Forest, Grassland"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    name="description"
-                    id="description"
-                    defaultValue={editingItem?.description || ''}
-                    rows={3}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    placeholder="Brief description of the species"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSpeciesModal(false);
-                      setEditingItem(null);
-                    }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-md"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md"
-                  >
-                    {editingItem ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
+      )}
+    </DashboardLayout>
   );
 };
 

@@ -177,7 +177,7 @@ public class BookingService {
     
     public List<Booking> getCheckedInBookings(LocalDate date) {
         return bookingRepository.findByVisitDate(date).stream()
-                .filter(b -> b.getBookingStatus() == BookingStatus.APPROVED)
+                .filter(b -> b.getBookingStatus() == BookingStatus.CHECKED_IN)
                 .toList();
     }
     
@@ -204,19 +204,19 @@ public class BookingService {
     
     public void checkInBooking(Long bookingId, User staff, String notes) {
         Booking booking = getBookingById(bookingId);
-        booking.setBookingStatus(BookingStatus.APPROVED);
+        booking.setBookingStatus(BookingStatus.CHECKED_IN);
         bookingRepository.save(booking);
     }
     
     public void checkOutBooking(Long bookingId, User staff, String notes) {
         Booking booking = getBookingById(bookingId);
-        booking.setBookingStatus(BookingStatus.APPROVED);
+        booking.setBookingStatus(BookingStatus.CHECKED_OUT);
         bookingRepository.save(booking);
     }
     
     public List<Booking> getCheckedOutBookings(LocalDate date) {
         return bookingRepository.findByVisitDate(date).stream()
-                .filter(b -> b.getBookingStatus() == BookingStatus.APPROVED)
+                .filter(b -> b.getBookingStatus() == BookingStatus.CHECKED_OUT)
                 .toList();
     }
     

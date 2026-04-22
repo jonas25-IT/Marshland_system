@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { getRoleDashboardPath } from '../utils/permissions';
 
 // API configuration
-const API_BASE_URL = 'http://localhost:8081/api';
+const API_BASE_URL = 'http://localhost:8083/api';
 
 // Create axios instance
 const api = axios.create({
@@ -155,9 +155,12 @@ export const AuthProvider = ({ children }) => {
       const { token, email: userEmail, roles, id } = response.data;
       
       // Clean role format - remove "ROLE_" prefix if present
-      const cleanRole = roles && roles.length > 0 
-        ? roles[0].replace('ROLE_', '') 
-        : 'TOURIST'; // Default fallback
+      let cleanRole = 'TOURIST';
+      if (roles && roles.length > 0) {
+        cleanRole = roles[0].replace('ROLE_', '');
+      } else if (response.data.role) {
+        cleanRole = response.data.role.replace('ROLE_', '');
+      }
       
       const user = {
         id,
@@ -189,14 +192,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function
-  const register = async (firstName, lastName, email, password, role) => {
+  const register = async (userData) => {
     dispatch({ type: AUTH_START });
+    const { firstName, lastName, email, password, role, phone } = userData;
     
     try {
       const response = await api.post('/auth/register', {
         firstName,
         lastName,
         email,
+        phone,
         passwordHash: password,
         role,
       });
@@ -221,6 +226,34 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     dispatch({ type: LOGOUT });
     toast.success('Logged out successfully');
+  };
+
+  // Update Profile function
+  const updateProfile = async (profileData) => {
+    try {
+      const response = await api.put('/users/profile', profileData);
+      const updatedUser = response.data;
+      
+      // Clean role format
+      if (updatedUser.role && updatedUser.role.startsWith('ROLE_')) {
+        updatedUser.role = updatedUser.role.replace('ROLE_', '');
+      }
+      
+      // Merge with current user to keep some client-side only info if any
+      const newUser = { ...state.user, ...updatedUser };
+      
+      localStorage.setItem('user', JSON.stringify(newUser));
+      dispatch({
+        type: AUTH_SUCCESS,
+        payload: { user: newUser, token: state.token },
+      });
+      
+      return { success: true, user: newUser };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Profile update failed';
+      toast.error(message);
+      return { success: false, error: message };
+    }
   };
 
   // Role-based dashboard redirection
@@ -249,6 +282,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile,
     clearError,
     getDashboardPath,
     api, // Export the configured axios instance

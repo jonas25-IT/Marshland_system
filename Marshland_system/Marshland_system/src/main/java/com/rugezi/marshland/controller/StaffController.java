@@ -196,7 +196,7 @@ public class StaffController {
         try {
             User staff = (User) authentication.getPrincipal();
             booking.setBookingId(bookingId);
-            Booking updatedBooking = bookingService.updateBooking(booking);
+            Booking updatedBooking = bookingService.updateBooking(booking, staff);
             return ResponseEntity.ok(updatedBooking);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -234,7 +234,7 @@ public class StaffController {
         try {
             User staff = (User) authentication.getPrincipal();
             visitDate.setDateId(dateId);
-            VisitDate updatedDate = visitDateService.updateVisitDate(visitDate);
+            VisitDate updatedDate = visitDateService.updateVisitDate(dateId, visitDate);
             return ResponseEntity.ok(updatedDate);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -256,7 +256,7 @@ public class StaffController {
     @GetMapping("/visit-dates")
     public ResponseEntity<List<VisitDate>> getAllVisitDates(Authentication authentication) {
         try {
-            List<VisitDate> visitDates = visitDateService.getAllVisitDates();
+            List<VisitDate> visitDates = visitDateService.findAll();
             return ResponseEntity.ok(visitDates);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

@@ -1,431 +1,191 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Logo from '../components/Logo';
+import { useSettings } from '../contexts/SettingsContext';
+import DashboardLayout, { StatCard, ActivityItem } from '../components/DashboardLayout';
 import { 
-  Calendar, 
-  Home, 
-  User, 
-  LogOut,
-  Plus,
-  Camera,
-  Star,
-  Clock,
-  MapPin,
-  Search,
-  Filter,
-  Heart,
-  MessageSquare,
-  Eye,
-  Info,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Bird,
-  Trees,
-  Fish,
-  Bug
+  Calendar, Camera, Star, Clock, MapPin, Search, Filter, 
+  Heart, MessageSquare, Eye, Info, CheckCircle, 
+  XCircle, AlertCircle, Bird, Trees, Fish, Bug, Plus
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import FeedbackModal from '../components/FeedbackModal';
 import FeedbackList from '../components/FeedbackList';
+import Settings from '../components/Settings';
+import Profile from '../components/Profile';
 
 const TouristDashboard = () => {
   const { user, logout, api } = useAuth();
+  const { t } = useSettings();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('dashboard');
   
-  // Booking state
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [editingItem, setEditingItem] = useState(null);
-  const [myFeedback, setMyFeedback] = useState([]);
-  
-  // Feedback state
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
-  
-  // Biodiversity state
   const [species, setSpecies] = useState([]);
-  const [searchSpecies, setSearchSpecies] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [selectedSpecies, setSelectedSpecies] = useState(null);
-
-  const loadDashboardData = useCallback(async () => {
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
+  
+  const loadData = useCallback(async () => {
     try {
-      const response = await api.get('/tourist/dashboard');
-      setDashboardData(response.data);
-      setMyFeedback(response.data.myFeedback || []);
-      setFeedbackLoading(false);
-      
-      // Load species data for biodiversity gallery
-      const speciesResponse = await api.get('/species/public');
-      setSpecies(speciesResponse.data);
+      setLoading(true);
+      const [dbRes, speciesRes, galleryRes] = await Promise.all([
+        api.get('/tourist/dashboard'),
+        api.get('/species/public'),
+        api.get('/gallery/photos')
+      ]);
+      setDashboardData(dbRes.data);
+      setSpecies(speciesRes.data);
+      setGalleryPhotos(galleryRes.data || []);
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-      // Set mock data as fallback
+      console.error('Tourist data load failed:', error);
+      // Mock fallback
       setDashboardData({
-        totalBookings: 8,
-        upcomingBookings: 2,
-        completedBookings: 5,
-        pendingBookings: 1,
+        totalBookings: 3, upcomingBookings: 1, completedBookings: 2, pendingBookings: 0,
         bookings: [
-          { id: 1, visitDate: '2024-04-01', numberOfVisitors: 3, status: 'APPROVED', visitType: 'Guided Tour' },
-          { id: 2, visitDate: '2024-04-05', numberOfVisitors: 2, status: 'PENDING', visitType: 'Self-Guided' },
-          { id: 3, visitDate: '2024-03-20', numberOfVisitors: 4, status: 'COMPLETED', visitType: 'Photography Tour' },
+          { bookingId: 101, visitDate: '2024-05-12', numberOfVisitors: 2, bookingStatus: 'APPROVED', visitType: 'Nature Walk' },
+          { bookingId: 102, visitDate: '2024-06-20', numberOfVisitors: 4, bookingStatus: 'PENDING', visitType: 'Photography' }
         ],
         availableDates: [
-          { id: 1, date: '2024-04-02', availableSpots: 8, maxCapacity: 15 },
-          { id: 2, date: '2024-04-03', availableSpots: 12, maxCapacity: 15 },
-          { id: 3, date: '2024-04-04', availableSpots: 5, maxCapacity: 15 },
+          { id: 1, date: '2024-05-15', availableSpots: 10 },
+          { id: 2, date: '2024-05-16', availableSpots: 4 }
         ]
       });
-      
-      // Mock species data
       setSpecies([
-        { id: 1, scientificName: 'Ardea cinerea', commonName: 'Grey Heron', type: 'BIRD', conservationStatus: 'Least Concern', imageUrl: '/images/grey-heron.jpg', description: 'Large wading bird found in wetlands' },
-        { id: 2, scientificName: 'Nymphaea lotus', commonName: 'Egyptian Water Lily', type: 'PLANT', conservationStatus: 'Least Concern', imageUrl: '/images/water-lily.jpg', description: 'Beautiful aquatic flowering plant' },
-        { id: 3, scientificName: 'Hippopotamus amphibius', commonName: 'Hippopotamus', type: 'MAMMAL', conservationStatus: 'Vulnerable', imageUrl: '/images/hippo.jpg', description: 'Large semi-aquatic mammal' },
+        { commonName: 'Grey Crowned Crane', type: 'Bird', conservationStatus: 'Endangered' },
+        { commonName: 'Sitatunga', type: 'Mammal', conservationStatus: 'Vulnerable' }
       ]);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // Booking functions
-  const handleCreateBooking = async (bookingData) => {
-    try {
-      const response = await api.post('/tourist/bookings/create', bookingData);
-      await loadDashboardData();
-      setShowBookingModal(false);
-      setEditingItem(null);
-      toast.success('Booking created successfully!');
-    } catch (error) {
-      console.error('Failed to create booking:', error);
-      toast.error('Failed to create booking: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleEditBooking = async (bookingData) => {
-    try {
-      await api.put(`/tourist/bookings/${bookingData.id}`, bookingData);
-      await loadDashboardData();
-      setShowBookingModal(false);
-      setEditingItem(null);
-      toast.success('Booking updated successfully!');
-    } catch (error) {
-      console.error('Failed to update booking:', error);
-      toast.error('Failed to update booking: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleDeleteBooking = async (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      try {
-        await api.delete(`/tourist/bookings/${bookingId}`);
-        await loadDashboardData();
-        toast.success('Booking cancelled successfully!');
-      } catch (error) {
-        console.error('Failed to cancel booking:', error);
-        toast.error('Failed to cancel booking: ' + (error.response?.data?.message || error.message));
-      }
-    }
-  };
-
-  const handleCancelBooking = async (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      try {
-        await api.post(`/tourist/bookings/${bookingId}/cancel`);
-        await loadDashboardData();
-        toast.success('Booking cancelled successfully!');
-      } catch (error) {
-        console.error('Failed to cancel booking:', error);
-        toast.error('Failed to cancel booking: ' + (error.response?.data?.message || error.message));
-      }
-    }
-  };
-
-  // CRUD Operations for Feedback
-  const handleCreateFeedback = async (feedbackData) => {
-    try {
-      await api.post('/tourist/feedback/create', feedbackData);
-      await loadDashboardData();
-      setShowFeedbackModal(false);
-      setEditingItem(null);
-      toast.success('Feedback submitted successfully!');
-    } catch (error) {
-      console.error('Failed to submit feedback:', error);
-      toast.error('Failed to submit feedback: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleEditFeedback = async (feedbackData) => {
-    try {
-      await api.put(`/tourist/feedback/${feedbackData.id}`, feedbackData);
-      await loadDashboardData();
-      setShowFeedbackModal(false);
-      setEditingItem(null);
-      toast.success('Feedback updated successfully!');
-    } catch (error) {
-      console.error('Failed to update feedback:', error);
-      toast.error('Failed to update feedback: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleDeleteFeedback = async (feedbackId) => {
-    if (window.confirm('Are you sure you want to delete this feedback?')) {
-      try {
-        await api.delete(`/tourist/feedback/${feedbackId}`);
-        await loadDashboardData();
-        toast.success('Feedback deleted successfully!');
-      } catch (error) {
-        console.error('Failed to delete feedback:', error);
-        toast.error('Failed to delete feedback: ' + (error.response?.data?.message || error.message));
-      }
-    }
-  };
-
-  // CRUD Operations for Profile
-  const handleUpdateProfile = async (profileData) => {
-    try {
-      await api.put('/tourist/profile', profileData);
-      await loadDashboardData();
-      setShowProfileModal(false);
-      setEditingItem(null);
-      toast.success('Profile updated successfully!');
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-      toast.error('Failed to update profile: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleSubmitFeedback = async (feedbackData) => {
-    try {
-      await api.post(`/tourist/feedback/${selectedBooking.id}`, feedbackData);
-      await loadDashboardData();
-      await loadMyFeedback();
-      setShowFeedbackModal(false);
-      setSelectedBooking(null);
-    } catch (error) {
-      console.error('Failed to submit feedback:', error);
-      throw error;
-    }
-  };
-
-  const handleOpenFeedbackModal = (booking) => {
-    setSelectedBooking(booking);
-    setShowFeedbackModal(true);
-  };
-
-  const canGiveFeedback = (booking) => {
-    return booking.status === 'APPROVED' || booking.status === 'COMPLETED';
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  }, [api]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    loadData();
+  }, [loadData]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  if (loading && !dashboardData) return (
+    <div className="min-h-screen bg-[#0D0E14] flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="glass-card">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Logo size="medium" variant="icon-only" />
-              <h1 className="text-2xl font-bold text-primary-800 ml-3">Tourist Dashboard</h1>
+    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <div className="space-y-10 animate-in fade-in duration-500">
+        
+        {activeTab === 'dashboard' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard title="My Visits" value={dashboardData?.totalBookings} change="History" icon={Calendar} color="text-purple-400" />
+              <StatCard title="Upcoming" value={dashboardData?.upcomingBookings} change="Next Month" icon={Clock} color="text-blue-400" />
+              <StatCard title="Eco Points" value={1250} change="+250" icon={Star} color="text-emerald-400" />
+              <StatCard title="Saved" value={5} change="Locations" icon={Heart} color="text-pink-400" />
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user?.name || user?.email}</span>
-              <button
-                onClick={() => navigate('/')}
-                className="btn-outline"
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </button>
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        {/* Welcome Section */}
-        <section className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Welcome, Tourist!</h2>
-          <p className="text-gray-600">Plan your visit to Rugezi Marshland</p>
-        </section>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-12">
+               {/* My Bookings List */}
+              <div className="lg:col-span-2 glass-card-premium p-8">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-xl font-bold">My Reservations</h3>
+                  <button className="btn-premium btn-premium-primary text-xs !py-2">Book New Visit</button>
+                </div>
+                <div className="space-y-4">
+                  {(dashboardData?.bookings || []).map((b) => (
+                    <div key={b.bookingId} className="p-5 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-purple-500/30 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                           <Calendar className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-200">{new Date(b.visitDate).toLocaleDateString()}</p>
+                          <p className="text-xs text-gray-500">{b.visitType} • {b.numberOfVisitors} Visitors</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${
+                          b.bookingStatus === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-400' :
+                          b.bookingStatus === 'PENDING' ? 'bg-orange-500/10 text-orange-400' : 'bg-white/5 text-gray-500'
+                        }`}>
+                          {b.bookingStatus}
+                        </span>
+                        <button className="p-2 hover:bg-white/10 rounded-lg text-gray-500 transition-all hidden group-hover:block"><Info className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-        {/* Stats Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Total Bookings</h3>
-                <p className="text-3xl font-bold text-primary-800">{dashboardData?.totalBookings || 0}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-primary-600" />
-            </div>
-          </div>
-          
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Upcoming</h3>
-                <p className="text-3xl font-bold text-blue-600">{dashboardData?.upcomingBookings || 0}</p>
-              </div>
-              <Clock className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
-          
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Completed</h3>
-                <p className="text-3xl font-bold text-green-600">{dashboardData?.completedBookings || 0}</p>
-              </div>
-              <Star className="h-8 w-8 text-green-600" />
-            </div>
-          </div>
-          
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-600">Pending</h3>
-                <p className="text-3xl font-bold text-orange-600">{dashboardData?.pendingBookings || 0}</p>
-              </div>
-              <Plus className="h-8 w-8 text-orange-600" />
-            </div>
-          </div>
-        </section>
-
-        {/* Quick Actions */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <Plus className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Book a Visit</h3>
-            <p className="text-sm text-gray-600">Schedule your visit</p>
-          </button>
-          
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <Camera className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Explore Species</h3>
-            <p className="text-sm text-gray-600">Discover wildlife</p>
-          </button>
-          
-          <button className="glass-card p-6 text-center hover:shadow-lg transition-shadow">
-            <Star className="h-12 w-12 text-green-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-800">Photo Gallery</h3>
-            <p className="text-sm text-gray-600">View photos</p>
-          </button>
-        </section>
-
-        {/* My Bookings */}
-        <section className="glass-card p-6 mb-8">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">My Bookings</h3>
-          <div className="space-y-3">
-            {dashboardData?.bookings?.map((booking) => (
-              <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <Calendar className="h-10 w-10 text-blue-500 mr-4" />
-                  <div>
-                    <p className="font-semibold text-gray-800">{booking.visitDate}</p>
-                    <p className="text-sm text-gray-600">{booking.visitType} • {booking.numberOfVisitors} visitors</p>
+              {/* Ecosystem Showcase */}
+              <div className="space-y-8">
+                <div className="glass-card-premium p-8 h-full">
+                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                    <Bird className="w-5 h-5 text-emerald-400" /> Marshland Watch
+                  </h3>
+                  <div className="space-y-6">
+                    {species.slice(0, 3).map((s, i) => (
+                      <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                         <div className="w-14 h-14 rounded-xl bg-white/5 overflow-hidden">
+                            <img src={s.imageUrl || `https://source.unsplash.com/100x100/?nature,${s.commonName}`} className="w-full h-full object-cover group-hover:scale-110 transition-all" alt="" />
+                         </div>
+                         <div>
+                            <p className="font-bold text-sm">{s.commonName}</p>
+                            <span className="text-[10px] text-pink-400 font-bold uppercase tracking-widest">{s.conservationStatus}</span>
+                         </div>
+                      </div>
+                    ))}
                   </div>
+                  <button onClick={() => setActiveTab('gallery')} className="w-full mt-8 py-3 bg-white/5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Explore Wiki</button>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${
-                    booking.status === 'APPROVED' ? 'text-green-600' : 
-                    booking.status === 'PENDING' ? 'text-yellow-600' : 
-                    'text-gray-600'
-                  }`}>
-                    {booking.status}
-                  </span>
-                  {canGiveFeedback(booking) && (
-                    <button
-                      onClick={() => handleOpenFeedbackModal(booking)}
-                      className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                      Feedback
-                    </button>
-                  )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Gallery / Tours Browse */}
+        {activeTab === 'tours' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             {[
+               { t: 'Bird Watching', d: 'Guided tour through the north marshes.', p: '25$' },
+               { t: 'Photography Safari', d: 'Private access to sunrise locations.', p: '45$' },
+               { t: 'Canoe Expedition', d: 'River passage through dense papyrus.', p: '35$' }
+             ].map((tour, i) => (
+               <div key={i} className="glass-card-premium overflow-hidden group">
+                  <div className="h-48 bg-white/5 relative">
+                     <img src={`https://source.unsplash.com/400x300/?nature,marsh,${i}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700" alt="" />
+                     <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg font-bold text-emerald-400">{tour.p}</div>
+                  </div>
+                  <div className="p-6">
+                     <h3 className="text-lg font-bold mb-2 group-hover:text-purple-400 transition-colors uppercase tracking-tight">{tour.t}</h3>
+                     <p className="text-sm text-gray-500 font-light mb-6 leading-relaxed">{tour.d}</p>
+                     <button className="w-full btn-premium btn-premium-secondary !text-xs !py-3">Check Availability</button>
+                  </div>
+               </div>
+             ))}
+          </div>
+        )}
+
+        {activeTab === 'gallery' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {(galleryPhotos && galleryPhotos.length > 0 ? galleryPhotos : [...Array(8)]).map((p, i) => (
+              <div key={p?.photo_id || p?.photoId || i} className="aspect-square glass-card-premium overflow-hidden group relative">
+                <img 
+                  src={p?.image_url || p?.imageUrl || `https://source.unsplash.com/400x400/?marsh,nature,wildlife,${i}`} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" 
+                  alt={p?.title || "Gallery Fragment"} 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                  <p className="text-xs font-bold text-white uppercase tracking-wider">{p?.title || "Scientific Capture"}</p>
+                  <p className="text-[10px] text-purple-400 font-medium">{p?.category || "Field Observation"}</p>
                 </div>
               </div>
             ))}
           </div>
-        </section>
+        )}
 
-        {/* Available Dates */}
-        <section className="glass-card p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Available Visit Dates</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {dashboardData?.availableDates?.map((date) => (
-              <div key={date.id} className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-semibold text-gray-800">{date.date}</h4>
-                  <span className={`text-sm ${
-                    date.availableSpots > 5 ? 'text-green-600' : 
-                    date.availableSpots > 0 ? 'text-yellow-600' : 
-                    'text-red-600'
-                  }`}>
-                    {date.availableSpots} spots left
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600">
-                  Capacity: {date.maxCapacity} • Available: {date.availableSpots}
-                </div>
-                {date.availableSpots > 0 && (
-                  <button className="btn-primary w-full mt-3">Book Now</button>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* My Feedback */}
-        <section className="glass-card p-6 mb-8">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">My Feedback</h3>
-          <FeedbackList 
-            feedbacks={myFeedback} 
-            loading={feedbackLoading}
-            showUser={false}
-          />
-        </section>
-      </main>
-
-      {/* Feedback Modal */}
-      <FeedbackModal
-        booking={selectedBooking}
-        isOpen={showFeedbackModal}
-        onClose={() => setShowFeedbackModal(false)}
-        onSubmit={handleSubmitFeedback}
-      />
-    </div>
+        {activeTab === 'profile' && <Profile />}
+        {activeTab === 'settings' && <Settings />}
+      </div>
+    </DashboardLayout>
   );
 };
 

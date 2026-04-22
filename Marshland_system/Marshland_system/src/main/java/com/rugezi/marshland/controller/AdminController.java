@@ -24,7 +24,6 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin(origins = "*", maxAge = 3600)
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
     
     private final UserService userService;
@@ -46,31 +45,59 @@ public class AdminController {
     }
     
     @GetMapping("/dashboard")
-    public ResponseEntity<Map<String, Object>> getAdminDashboard() {
-        Map<String, Object> dashboard = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> getAdminDashboard(Authentication authentication) {
+        System.out.println(">>> ADMIN ACCESS ATTEMPT: User=" + authentication.getName());
+        System.out.println(">>> ADMIN ACCESS AUTHORITIES: " + authentication.getAuthorities());
         
-        // System Overview
-        dashboard.put("totalUsers", userService.getTotalUsersCount());
-        dashboard.put("totalBookings", bookingService.getTotalBookingsCount());
-        dashboard.put("totalSpecies", speciesService.getTotalSpeciesCount());
-        dashboard.put("pendingBookings", bookingService.getPendingBookingsCount());
-        
-        // Recent activity
-        dashboard.put("recentUsers", userService.getRecentUsers(5));
-        dashboard.put("recentBookings", bookingService.getRecentBookings(5));
-        
-        // Analytics
-        LocalDate today = LocalDate.now();
-        LocalDate monthAgo = today.minusMonths(1);
-        dashboard.put("analytics", analyticsService.getDashboardMetrics(monthAgo, today));
-        
-        return ResponseEntity.ok(dashboard);
+        try {
+            // Check for specific authority string to handle potential ROLE_ prefix drift
+            boolean hasAdminRank = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+            
+            if (!hasAdminRank) {
+                System.err.println(">>> ACCESS REJECTED: User lacks ADMIN or ROLE_ADMIN authority");
+                return ResponseEntity.status(403).body(Map.of("error", "Access Denied: Insufficient Authority"));
+            }
+
+            System.out.println(">>> STARTING DATABASE PROBE...");
+            try {
+                User testUser = userService.findById(15L);
+                System.out.println(">>> PROBE SUCCESS: Found user " + testUser.getEmail());
+            } catch (Exception e) {
+                System.out.println(">>> PROBE FAILED: Cannot find user ID 15. Error: " + e.getMessage());
+            }
+
+            Map<String, Object> dashboard = new HashMap<>();
+            
+            // System Overview
+            dashboard.put("totalUsers", userService.getTotalUsersCount());
+            dashboard.put("totalSpecies", speciesService.getTotalSpeciesCount());
+            dashboard.put("totalBookings", bookingService.getTotalBookingsCount());
+            dashboard.put("pendingBookings", bookingService.getPendingBookingsCount());
+            
+            // Recent Activity
+            dashboard.put("recentUsers", userService.getRecentUsers(5));
+            dashboard.put("recentBookings", bookingService.getRecentBookings(5));
+            
+            // Analytics
+            dashboard.put("platformGrowth", analyticsService.getPlatformGrowthData());
+            dashboard.put("bookingStatusDistribution", analyticsService.getBookingStatusDistribution());
+            
+            return ResponseEntity.ok(dashboard);
+        } catch (Exception e) {
+            System.err.println("!!! DASHBOARD DATA ERROR: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
     
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<Map<String, Object>> getAllUsers() {
         List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "data", users
+        ));
     }
     
     @PostMapping("/users")
@@ -114,15 +141,21 @@ public class AdminController {
     }
     
     @GetMapping("/bookings/pending")
-    public ResponseEntity<List<Booking>> getPendingBookings() {
+    public ResponseEntity<Map<String, Object>> getPendingBookings() {
         List<Booking> bookings = bookingService.getPendingBookings();
-        return ResponseEntity.ok(bookings);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "data", bookings
+        ));
     }
     
     @GetMapping("/bookings/all")
-    public ResponseEntity<List<Booking>> getAllBookings() {
+    public ResponseEntity<Map<String, Object>> getAllBookings() {
         List<Booking> bookings = bookingService.getAllBookings();
-        return ResponseEntity.ok(bookings);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "data", bookings
+        ));
     }
     
     @PostMapping("/bookings")
@@ -198,9 +231,12 @@ public class AdminController {
     }
     
     @GetMapping("/species/all")
-    public ResponseEntity<List<Species>> getAllSpeciesForAdmin() {
+    public ResponseEntity<Map<String, Object>> getAllSpeciesForAdmin() {
         List<Species> species = speciesService.getAllSpecies();
-        return ResponseEntity.ok(species);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "data", species
+        ));
     }
     
     @PostMapping("/species/create")

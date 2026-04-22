@@ -60,7 +60,6 @@ public class SpeciesCRUDController {
     
     // READ - Get all species with pagination
     @GetMapping
-    @PreAuthorize("hasAnyRole('ECOLOGIST', 'ADMIN', 'TOURIST', 'STAFF')")
     public ResponseEntity<Map<String, Object>> getAllSpecies(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -83,7 +82,6 @@ public class SpeciesCRUDController {
     
     // READ - Get species by ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ECOLOGIST', 'ADMIN', 'TOURIST', 'STAFF')")
     public ResponseEntity<Map<String, Object>> getSpeciesById(@PathVariable Long id) {
         try {
             Optional<Species> species = speciesService.findById(id);

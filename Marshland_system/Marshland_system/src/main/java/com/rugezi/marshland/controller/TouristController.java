@@ -174,7 +174,7 @@ public class TouristController {
             }
             
             booking.setBookingId(bookingId);
-            Booking updatedBooking = bookingService.updateBooking(booking);
+            Booking updatedBooking = bookingService.updateBooking(booking, currentUser);
             return ResponseEntity.ok(updatedBooking);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

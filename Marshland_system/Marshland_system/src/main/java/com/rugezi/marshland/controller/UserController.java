@@ -24,6 +24,12 @@ public class UserController {
         User currentUser = (User) authentication.getPrincipal();
         return userService.findById(currentUser.getUserId());
     }
+
+    @PutMapping("/profile")
+    public User updateProfile(@RequestBody User updatedData, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        return userService.updateUser(currentUser.getUserId(), updatedData);
+    }
     
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")

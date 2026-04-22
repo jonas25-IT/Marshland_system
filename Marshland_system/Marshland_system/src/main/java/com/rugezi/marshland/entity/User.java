@@ -1,6 +1,7 @@
 package com.rugezi.marshland.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,7 +13,13 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Entity
-@Table(name = "user")
+@Table(name = "`user`", indexes = {
+    @Index(name = "idx_user_email", columnList = "email")
+})
+@Getter
+@Setter
+@AllArgsConstructor
+@Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User implements UserDetails {
     
@@ -114,6 +121,9 @@ public class User implements UserDetails {
     // UserDetails Implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (role == null) {
+            return Collections.emptyList();
+        }
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 

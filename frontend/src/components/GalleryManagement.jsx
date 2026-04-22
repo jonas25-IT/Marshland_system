@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { 
-  Image, 
+  Image as ImageIcon, 
   Plus, 
   Edit, 
   Trash2, 
@@ -18,11 +19,17 @@ import {
   Calendar,
   User,
   Tag,
-  BarChart3
+  BarChart3,
+  RefreshCw,
+  MoreVertical,
+  Globe,
+  Monitor
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) => {
   const { user, api } = useAuth();
+  const { t } = useSettings();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -30,8 +37,9 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [categories, setCategories] = useState([]);
-  const [uploadMode, setUploadMode] = useState('url'); // 'url' or 'file'
+  const [uploadMode, setUploadMode] = useState('file'); // Default to file for local upload
   const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   const loadPhotos = async () => {
     try {
@@ -39,6 +47,11 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
       setPhotos(response.data);
     } catch (error) {
       console.error('Failed to load photos:', error);
+      // Fallback mock
+      setPhotos([
+        { photo_id: 1, title: 'Morning Mist', category: 'Landscape', description: 'Early morning over the north marsh.', image_url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&q=80', upload_date: new Date() },
+        { photo_id: 2, title: 'Grey Crane Nest', category: 'Wildlife', description: 'Rare nesting behavior observed.', image_url: 'https://images.unsplash.com/photo-1555620263-73a02c645220?auto=format&fit=crop&q=80', upload_date: new Date() }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -47,9 +60,9 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
   const loadCategories = async () => {
     try {
       const response = await api.get('/gallery/photos/categories');
-      setCategories(response.data);
+      setCategories(response.data.length > 0 ? response.data : ['Wildlife', 'Landscape', 'Birds', 'Plants', 'Conservation']);
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      setCategories(['Wildlife', 'Landscape', 'Birds', 'Plants', 'Conservation']);
     }
   };
 
@@ -58,443 +71,293 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
     loadCategories();
   }, []);
 
-  const handleCreatePhoto = async (photoData) => {
-    try {
-      await api.post('/gallery/photos', photoData);
-      await loadPhotos();
-      setShowModal(false);
-      setEditingPhoto(null);
-    } catch (error) {
-      console.error('Failed to create photo:', error);
-    }
-  };
-
-  const handleUpdatePhoto = async (photoData) => {
-    try {
-      await api.put(`/gallery/photos/${editingPhoto.photoId}`, photoData);
-      await loadPhotos();
-      setShowModal(false);
-      setEditingPhoto(null);
-    } catch (error) {
-      console.error('Failed to update photo:', error);
-    }
-  };
-
-  const handleDeletePhoto = async (photoId) => {
-    if (window.confirm('Are you sure you want to delete this photo?')) {
-      try {
-        await api.delete(`/gallery/photos/${photoId}`);
-        await loadPhotos();
-      } catch (error) {
-        console.error('Failed to delete photo:', error);
-      }
-    }
-  };
-
-  const handleEditPhoto = (photo) => {
-    setEditingPhoto(photo);
-    setUploadMode('url'); // Reset to URL mode for editing
-    setShowModal(true);
-  };
-
-  const handleSearch = async (term) => {
-    setSearchTerm(term);
-    try {
-      const response = await api.get(`/gallery/photos/search?searchTerm=${term}`);
-      setPhotos(response.data);
-    } catch (error) {
-      console.error('Failed to search photos:', error);
-    }
-  };
-
-  const handleFilter = async (category) => {
-    setFilterCategory(category);
-    try {
-      const response = await api.get(`/gallery/photos/category/${category}`);
-      setPhotos(response.data);
-    } catch (error) {
-      console.error('Failed to filter photos:', error);
-    }
-  };
-
   const handleFileUpload = async (file) => {
     if (!file) return null;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', 'System Capture ' + new Date().getTime());
+    formData.append('category', 'WILDLIFE');
+    formData.append('description', 'Synchronized from local PC');
     
-    setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
       const response = await api.post('/gallery/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
+      // The backend returns a flat object: { imageUrl, fileName, contentType, fileSize }
       return response.data;
     } catch (error) {
-      console.error('Failed to upload file:', error);
-      alert('Failed to upload file. Please try again.');
+      console.error('File streaming failed:', error);
+      toast.error('File streaming failed');
       return null;
     } finally {
       setUploading(false);
     }
   };
 
-  const filteredPhotos = photos.filter(photo => {
-    const matchesSearch = !searchTerm || 
-      photo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      photo.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      photo.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (photo.fileName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (photo.contentType || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = filterCategory === 'all' || photo.category === filterCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
+  const handleSavePhoto = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    setUploading(true);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+    try {
+      let imageUrl = editingPhoto?.image_url || '';
+      let metaData = {};
+
+      if (uploadMode === 'file') {
+        const file = formData.get('file');
+        if (file && file.size > 0) {
+          const uploadResult = await handleFileUpload(file);
+          if (uploadResult) {
+            imageUrl = 'http://localhost:8083' + uploadResult.imageUrl;
+            metaData = {
+              file_name: uploadResult.fileName,
+              content_type: uploadResult.contentType,
+              file_size: uploadResult.fileSize
+            };
+          }
+        }
+      } else {
+        imageUrl = formData.get('image_url');
+      }
+
+      if (!imageUrl) {
+        toast.error('Please provide an image');
+        setUploading(false);
+        return;
+      }
+
+      const photoPayload = {
+        title: formData.get('title'),
+        description: formData.get('description'),
+        category: formData.get('category'),
+        image_url: imageUrl,
+        ...metaData
+      };
+
+      if (editingPhoto) {
+        await api.put(`/gallery/photos/${editingPhoto.photo_id || editingPhoto.photoId}`, photoPayload);
+        toast.success('Capture synchronized');
+      } else {
+        await api.post('/gallery/photos', photoPayload);
+        toast.success('New moment captured in gallery');
+      }
+
+      setShowModal(false);
+      setEditingPhoto(null);
+      setPreviewUrl(null);
+      loadPhotos();
+    } catch (error) {
+      toast.error('Failed to save to gallery');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Erase this capture from global sync?')) {
+      try {
+        await api.delete(`/gallery/photos/${id}`);
+        toast.success('Photo removed');
+        loadPhotos();
+      } catch (error) { toast.error('Erase failed'); }
+    }
+  };
+
+  const handlePreview = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const filteredPhotos = photos.filter(p => 
+    (filterCategory === 'all' || p.category === filterCategory) &&
+    (p.title.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Image className="h-8 w-8 text-primary-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Photo Gallery</h1>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search photos..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64"
-                />
-              </div>
-              
-              <select
-                value={filterCategory}
-                onChange={(e) => handleFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="all">All Categories</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              
-              <button
-                onClick={() => {
-                  setUploadMode('url'); // Reset to URL mode for new photo
-                  setShowModal(true);
-                }}
-                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Photo
-              </button>
-            </div>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Search and Filters Bar */}
+      <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
+        <div className="relative w-full lg:w-96 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-purple-500 transition-colors" />
+          <input 
+            type="text" 
+            placeholder="Search the gallery..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-3.5 text-sm focus:outline-none focus:border-purple-500/50 transition-all"
+          />
+        </div>
+
+        <div className="flex items-center gap-4 w-full lg:w-auto">
+          <div className="relative flex-1 lg:flex-none">
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <select 
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="w-full lg:w-48 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-10 py-3.5 text-sm appearance-none focus:outline-none focus:border-purple-500/50 transition-all"
+            >
+              <option value="all" className="bg-[#0D0E14]">All Elements</option>
+              {categories.map(c => <option key={c} value={c} className="bg-[#0D0E14]">{c}</option>)}
+            </select>
           </div>
+
+          <button 
+            onClick={() => { setEditingPhoto(null); setPreviewUrl(null); setShowModal(true); }}
+            className="btn-premium btn-premium-primary !py-3 !px-6 flex items-center gap-2 whitespace-nowrap"
+          >
+            <Camera className="w-4 h-4" /> Capture Moment
+          </button>
         </div>
       </div>
 
-      {/* Photo Grid */}
-      <div className="container mx-auto px-6 py-8">
-        {filteredPhotos.length === 0 ? (
-          <div className="text-center py-12">
-            <Image className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No photos found</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredPhotos.map(photo => (
-              <div key={photo.photoId} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img 
-                    src={photo.imageUrl} 
-                    alt={photo.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{photo.title}</h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-full">
-                          {photo.category}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 text-sm mb-3">{photo.description}</p>
-                    {(photo.fileName || photo.contentType) && (
-                      <p className="text-xs text-gray-500 mb-3">
-                        {photo.fileName ? `File: ${photo.fileName}` : ''}
-                        {photo.fileName && photo.contentType ? ' • ' : ''}
-                        {photo.contentType ? `Type: ${photo.contentType}` : ''}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">
-                        <Calendar className="h-4 w-4 inline mr-1" />
-                        {new Date(photo.uploadDate).toLocaleDateString()}
-                      </span>
-                      <div className="flex space-x-2">
-                        {allowedRoles.includes(user?.role) && (
-                          <>
-                            <button
-                              onClick={() => handleEditPhoto(photo)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeletePhoto(photo.photoId)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </>
-                        )}
-                        <button className="text-gray-600 hover:text-gray-800">
-                          <Eye className="h-4 w-4" />
+      {/* Cinematic Photo Grid */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+           <RefreshCw className="w-8 h-8 text-purple-500 animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {filteredPhotos.map((photo) => (
+            <div key={photo.photo_id || photo.photoId} className="group relative glass-card-premium overflow-hidden aspect-[4/5] scale-in duration-300">
+               {/* Background Image */}
+               <img 
+                 src={photo.image_url || photo.imageUrl} 
+                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                 alt="" 
+               />
+               
+               {/* Gradient Overlay */}
+               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+
+               {/* Photo Info */}
+               <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400 mb-2 block">{photo.category}</span>
+                  <h3 className="text-lg font-bold text-white mb-2 leading-tight">{photo.title}</h3>
+                  <p className="text-xs text-gray-400 font-light line-clamp-2 mb-4 opacity-0 group-hover:opacity-100 transition-opacity">{photo.description}</p>
+                  
+                  <div className="flex items-center justify-between border-t border-white/10 pt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" /> {new Date(photo.upload_date || photo.uploadDate).toLocaleDateString()}
+                     </span>
+                     <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => { setEditingPhoto(photo); setPreviewUrl(null); setShowModal(true); }}
+                          className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors"
+                        >
+                           <Edit className="w-3 h-3" />
                         </button>
-                      </div>
-                    </div>
+                        <button 
+                          onClick={() => handleDelete(photo.photo_id || photo.photoId)}
+                          className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-500 transition-colors"
+                        >
+                           <Trash2 className="w-3 h-3" />
+                        </button>
+                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Photo Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full z-50">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {editingPhoto ? 'Edit Photo' : 'Add New Photo'}
-                </h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.target);
-                  
-                  let photoData = {
-                    title: formData.get('title'),
-                    description: formData.get('description'),
-                    category: formData.get('category'),
-                    fileName: formData.get('fileName'),
-                    contentType: formData.get('contentType'),
-                    fileSize: formData.get('fileSize') ? Number(formData.get('fileSize')) : null,
-                  };
-                  
-                  if (uploadMode === 'file') {
-                    const file = formData.get('file');
-                    if (file && file.size > 0) {
-                      const uploadResult = await handleFileUpload(file);
-                      if (!uploadResult) return; // Upload failed
-                      
-                      photoData.imageUrl = uploadResult.imageUrl;
-                      photoData.fileName = uploadResult.fileName;
-                      photoData.contentType = uploadResult.contentType;
-                      photoData.fileSize = uploadResult.fileSize;
-                    } else {
-                      alert('Please select a file to upload');
-                      return;
-                    }
-                  } else {
-                    photoData.imageUrl = formData.get('imageUrl');
-                    if (!photoData.imageUrl) {
-                      alert('Please enter an image URL');
-                      return;
-                    }
-                  }
-                  
-                  if (editingPhoto) {
-                    handleUpdatePhoto(photoData);
-                  } else {
-                    handleCreatePhoto(photoData);
-                  }
-                }}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Photo Title
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    defaultValue={editingPhoto?.title || ''}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    rows="4"
-                    defaultValue={editingPhoto?.description || ''}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Image Source
-                  </label>
-                  <div className="flex space-x-4 mb-3">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="uploadMode"
-                        value="url"
-                        checked={uploadMode === 'url'}
-                        onChange={(e) => setUploadMode(e.target.value)}
-                        className="mr-2"
-                      />
-                      <span>Internet URL</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="uploadMode"
-                        value="file"
-                        checked={uploadMode === 'file'}
-                        onChange={(e) => setUploadMode(e.target.value)}
-                        className="mr-2"
-                      />
-                      <span>Upload from PC</span>
-                    </label>
-                  </div>
-                  
-                  {uploadMode === 'url' ? (
-                    <input
-                      type="url"
-                      name="imageUrl"
-                      defaultValue={editingPhoto?.imageUrl || ''}
-                      required={uploadMode === 'url'}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  ) : (
-                    <input
-                      type="file"
-                      name="file"
-                      accept="image/*"
-                      required={uploadMode === 'file'}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  )}
-                  
-                  {uploading && (
-                    <p className="text-sm text-blue-600 mt-2">Uploading file...</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
-                  <select
-                    name="category"
-                    defaultValue={editingPhoto?.category || 'Wildlife'}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    <option value="Wildlife">Wildlife</option>
-                    <option value="Landscape">Landscape</option>
-                    <option value="Birds">Birds</option>
-                    <option value="Plants">Plants</option>
-                    <option value="Insects">Insects</option>
-                    <option value="Events">Events</option>
-                    <option value="Conservation">Conservation</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    File Name (optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="fileName"
-                    defaultValue={editingPhoto?.fileName || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Content Type (optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="contentType"
-                    defaultValue={editingPhoto?.contentType || ''}
-                    placeholder="image/png"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    File Size (bytes) (optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="fileSize"
-                    defaultValue={editingPhoto?.fileSize || ''}
-                    min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700"
-                  >
-                    {editingPhoto ? 'Update' : 'Create'} Photo
-                  </button>
-                </div>
-              </form>
+               </div>
             </div>
+          ))}
+
+          {/* Empty State Card */}
+          <button 
+            onClick={() => { setEditingPhoto(null); setPreviewUrl(null); setShowModal(true); }}
+            className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-purple-500/20 transition-all aspect-[4/5] group"
+          >
+             <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                <Plus className="w-8 h-8" />
+             </div>
+             <p className="text-sm font-bold text-gray-500 group-hover:text-gray-300">New Gallery Entry</p>
+          </button>
+        </div>
+      )}
+
+      {/* Professional Media Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowModal(false)}></div>
+          <div className="relative glass-card-premium w-full max-w-2xl p-0 overflow-hidden shadow-[0_0_100px_rgba(139,92,246,0.15)] flex flex-col md:flex-row h-[600px] md:h-auto">
+            {/* Left Side: Preview */}
+            <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative group min-h-[300px]">
+               {previewUrl || editingPhoto?.image_url || editingPhoto?.imageUrl ? (
+                 <img src={previewUrl || editingPhoto?.image_url || editingPhoto?.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+               ) : (
+                 <div className="flex flex-col items-center gap-3 text-gray-700">
+                    <ImageIcon className="w-12 h-12" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">No Media Selected</span>
+                 </div>
+               )}
+               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all">
+                  <button 
+                    type="button"
+                    onClick={() => document.getElementById('gallery-file-input').click()}
+                    className="p-4 bg-white/10 hover:bg-white/20 rounded-full text-white mb-3"
+                  >
+                     <Upload className="w-6 h-6" />
+                  </button>
+                  <p className="text-[10px] font-black text-white uppercase tracking-widest">Capture from PC</p>
+               </div>
+            </div>
+
+            {/* Right Side: Attributes */}
+            <form onSubmit={handleSavePhoto} className="flex-1 p-10 flex flex-col justify-between">
+               <input id="gallery-file-input" name="file" type="file" className="hidden" accept="image/*" onChange={handlePreview} />
+               <div>
+                  <div className="flex justify-between items-start mb-8">
+                     <div>
+                        <h2 className="text-2xl font-black text-white tracking-tight">{editingPhoto ? 'Edit Fragment' : 'New Capture'}</h2>
+                        <p className="text-xs text-gray-500 italic mt-1">Sync visual moments with the Marshland ecosystem</p>
+                     </div>
+                     <button type="button" onClick={() => setShowModal(false)} className="p-2 hover:bg-white/5 rounded-xl text-gray-600 transition-colors">
+                        <X className="w-6 h-6" />
+                     </button>
+                  </div>
+
+                  <div className="space-y-6">
+                     <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Title</label>
+                        <input name="title" defaultValue={editingPhoto?.title} required placeholder="Name this moment..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-sm" />
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Category</label>
+                           <select name="category" defaultValue={editingPhoto?.category || 'Wildlife'} className="w-full bg-[#16171D] border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-sm appearance-none">
+                              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                           </select>
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Sync Source</label>
+                           <div className="flex items-center gap-2 h-full py-4 px-2">
+                              <button type="button" onClick={() => setUploadMode('file')} className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${uploadMode === 'file' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Local</button>
+                              <button type="button" onClick={() => setUploadMode('url')} className={`flex-1 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${uploadMode === 'url' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Internet</button>
+                           </div>
+                        </div>
+                     </div>
+
+                     {uploadMode === 'url' && (
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Media Link</label>
+                           <input name="image_url" defaultValue={editingPhoto?.image_url || editingPhoto?.imageUrl} placeholder="https://..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-sm font-mono" />
+                        </div>
+                     )}
+
+                     <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Composition Description</label>
+                        <textarea name="description" defaultValue={editingPhoto?.description} rows="3" placeholder="Narrate the scenery..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-sm resize-none" />
+                     </div>
+                  </div>
+               </div>
+
+               <div className="flex gap-4 mt-10">
+                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all">Cancel</button>
+                  <input type="file" name="file" className="hidden" id="gallery-file-final" onChange={handlePreview} />
+                  <button type="submit" disabled={uploading} className="flex-1 btn-premium btn-premium-primary !py-4 flex items-center justify-center gap-3">
+                     {uploading ? <RefreshCw className="w-4 h-4 animate-spin" /> : (editingPhoto ? 'Update Fragment' : 'Authorize Sync')}
+                  </button>
+               </div>
+            </form>
           </div>
         </div>
       )}

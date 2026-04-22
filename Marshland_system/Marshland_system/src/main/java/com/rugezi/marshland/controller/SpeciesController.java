@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/species-public")
+@RequestMapping("/api/species/public")
 public class SpeciesController {
     
     private final SpeciesService speciesService;
