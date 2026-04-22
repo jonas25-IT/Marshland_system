@@ -13,6 +13,7 @@ import FeedbackModal from '../components/FeedbackModal';
 import FeedbackList from '../components/FeedbackList';
 import Settings from '../components/Settings';
 import Profile from '../components/Profile';
+import NotificationsList from '../components/NotificationsList';
 
 const TouristDashboard = () => {
   const { user, logout, api } = useAuth();
@@ -24,6 +25,7 @@ const TouristDashboard = () => {
   
   const [species, setSpecies] = useState([]);
   const [galleryPhotos, setGalleryPhotos] = useState([]);
+  const [tours, setTours] = useState([]);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedTour, setSelectedTour] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -34,15 +36,17 @@ const TouristDashboard = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [dbRes, speciesRes, galleryRes, bookingsRes] = await Promise.all([
+      const [dbRes, speciesRes, galleryRes, toursRes, bookingsRes] = await Promise.all([
         api.get('/tourist/dashboard').catch(e => { console.error('Dashboard error:', e); return { data: null }; }),
         api.get('/species/public').catch(e => { console.error('Species error:', e); return { data: [] }; }),
         api.get('/gallery/photos').catch(e => { console.error('Gallery error:', e); return { data: [] }; }),
+        api.get('/tours').catch(e => { console.error('Tours error:', e); return { data: [] }; }),
         api.get('/booking/my-bookings').catch(e => { console.error('Bookings error:', e); return { data: [] }; })
       ]);
       setDashboardData(dbRes.data);
       setSpecies(speciesRes.data);
       setGalleryPhotos(galleryRes.data || []);
+      setTours(toursRes.data || []);
       // Update bookings in dashboard data with real data
       if (bookingsRes.data) {
         // Check for status changes
@@ -141,7 +145,7 @@ const TouristDashboard = () => {
       const bookingData = {
         visitDate: formData.get('visitDate'),
         numberOfVisitors: parseInt(formData.get('numberOfVisitors')),
-        visitType: selectedTour || 'Nature Walk'
+        visitType: typeof selectedTour === 'object' ? selectedTour.title : selectedTour || 'Nature Walk'
       };
 
       await api.post('/booking/new', bookingData);
@@ -245,20 +249,27 @@ const TouristDashboard = () => {
         {/* Gallery / Tours Browse */}
         {activeTab === 'tours' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-             {[
-               { t: 'Bird Watching', d: 'Guided tour through the north marshes.', p: '25$' },
-               { t: 'Photography Safari', d: 'Private access to sunrise locations.', p: '45$' },
-               { t: 'Canoe Expedition', d: 'River passage through dense papyrus.', p: '35$' }
-             ].map((tour, i) => (
-               <div key={i} className="glass-card-premium overflow-hidden group">
+             {(tours && tours.length > 0 ? tours : [
+               { tourId: 1, title: 'Bird Watching', description: 'Guided tour through the north marshes.', price: 25, category: 'Wildlife', durationHours: 3, imageUrl: null },
+               { tourId: 2, title: 'Photography Safari', description: 'Private access to sunrise locations.', price: 45, category: 'Photography', durationHours: 4, imageUrl: null },
+               { tourId: 3, title: 'Canoe Expedition', description: 'River passage through dense papyrus.', price: 35, category: 'Adventure', durationHours: 3, imageUrl: null }
+             ]).map((tour, i) => (
+               <div key={tour.tourId || i} className="glass-card-premium overflow-hidden group">
                   <div className="h-48 bg-white/5 relative">
-                     <img src={`https://source.unsplash.com/400x300/?nature,marsh,${i}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700" alt="" />
-                     <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg font-bold text-emerald-400">{tour.p}</div>
+                     <img 
+                       src={tour.imageUrl || `https://source.unsplash.com/400x300/?nature,marsh,${i}`} 
+                       className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700" 
+                       alt={tour.title} 
+                     />
+                     <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg font-bold text-emerald-400">
+                       ${tour.price}
+                     </div>
                   </div>
                   <div className="p-6">
-                     <h3 className="text-lg font-bold mb-2 group-hover:text-purple-400 transition-colors uppercase tracking-tight">{tour.t}</h3>
-                     <p className="text-sm text-gray-500 font-light mb-6 leading-relaxed">{tour.d}</p>
-                     <button onClick={() => { setSelectedTour(tour.t); setShowBookingModal(true); }} className="w-full btn-premium btn-premium-secondary !text-xs !py-3">Check Availability</button>
+                     <h3 className="text-lg font-bold mb-2 group-hover:text-purple-400 transition-colors uppercase tracking-tight">{tour.title}</h3>
+                     <p className="text-sm text-gray-500 font-light mb-2 leading-relaxed">{tour.description}</p>
+                     <p className="text-xs text-gray-600 mb-4">{tour.durationHours} hours • {tour.category}</p>
+                     <button onClick={() => { setSelectedTour(tour); setShowBookingModal(true); }} className="w-full btn-premium btn-premium-secondary !text-xs !py-3">Check Availability</button>
                   </div>
                </div>
              ))}
@@ -357,6 +368,9 @@ const TouristDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Notifications */}
+        {activeTab === 'notifications' && <NotificationsList />}
 
         {activeTab === 'profile' && <Profile />}
         {activeTab === 'settings' && <Settings />}

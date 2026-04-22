@@ -2,14 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout, { StatCard, ActivityItem } from '../components/DashboardLayout';
-import { 
-  Users, Calendar, CheckCircle, MessageSquare, AlertTriangle, 
-  Clock, MapPin, Search, Filter, Edit, Trash2, Plus, 
-  Activity, Bell, Compass, FileText, Check, X
+import {
+  Users, Calendar, CheckCircle, MessageSquare, AlertTriangle,
+  Clock, MapPin, Search, Filter, Edit, Trash2, Plus,
+  Activity, Bell, Compass, FileText, Check, X, RefreshCw,
+  Mail, Phone
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Settings from '../components/Settings';
 import Profile from '../components/Profile';
+import NotificationsList from '../components/NotificationsList';
 
 const StaffDashboard = () => {
   const { user, logout, api } = useAuth();
@@ -17,18 +19,23 @@ const StaffDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
-  
+
   const [todayBookings, setTodayBookings] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [showTourAssistModal, setShowTourAssistModal] = useState(false);
+  const [showIncidentReportModal, setShowIncidentReportModal] = useState(false);
   
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [dbRes, bookingsRes] = await Promise.all([
+      const [dbRes, bookingsRes, logsRes] = await Promise.all([
         api.get('/staff/dashboard'),
-        api.get('/staff/bookings/today')
+        api.get('/staff/bookings/today'),
+        api.get('/staff/logs/activities').catch(e => { console.error('Logs error:', e); return { data: null }; })
       ]);
       setDashboardData(dbRes.data);
       setTodayBookings(bookingsRes.data.allBookings || []);
+      setActivityLogs(logsRes.data || []);
     } catch (error) {
       console.error('Staff data load failed:', error);
       // Mock fallback
@@ -52,9 +59,25 @@ const StaffDashboard = () => {
   const handleCheckIn = async (id) => {
     try {
       await api.post(`/staff/bookings/${id}/checkin`);
-      toast.success('Member checked in');
+      toast.success('Visitor checked in successfully');
       loadData();
-    } catch (e) { toast.error('Action failed'); }
+    } catch (e) {
+      console.error('Check-in failed:', e);
+      toast.error('Check-in failed: ' + (e.response?.data?.error || 'Unknown error'));
+    }
+  };
+
+  const handleFastCheckIn = () => {
+    setActiveTab('tasks');
+    toast.success('Navigated to Today\'s Dispatch for check-in');
+  };
+
+  const handleTourAssist = () => {
+    setShowTourAssistModal(true);
+  };
+
+  const handleIncidentReport = () => {
+    setShowIncidentReportModal(true);
   };
 
   if (loading && !dashboardData) return (
@@ -74,6 +97,63 @@ const StaffDashboard = () => {
               <StatCard title="Daily Bookings" value={dashboardData?.todayBookings} change="+15%" icon={Calendar} color="text-blue-400" />
               <StatCard title="Inquiries" value={dashboardData?.messages} change="+1" icon={MessageSquare} color="text-emerald-400" />
               <StatCard title="Footfall Today" value={dashboardData?.todayVisitors} change="+8%" icon={Users} color="text-purple-400" />
+            </div>
+
+            {/* Capacity Awareness */}
+            <div className="glass-card-premium p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-orange-400" />
+                  Daily Capacity Monitor
+                </h3>
+                <span className="text-xs text-gray-500 italic">Max: 50 visitors</span>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-400">Current Visitors</span>
+                    <span className="text-sm font-bold text-gray-200">{todayBookings.filter(b => b.bookingStatus === 'CHECKED_IN').length} / 50</span>
+                  </div>
+                  <div className="w-full bg-black/20 rounded-full h-3 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        (todayBookings.filter(b => b.bookingStatus === 'CHECKED_IN').length / 50) > 0.8
+                          ? 'bg-red-500'
+                          : (todayBookings.filter(b => b.bookingStatus === 'CHECKED_IN').length / 50) > 0.6
+                          ? 'bg-orange-500'
+                          : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${(todayBookings.filter(b => b.bookingStatus === 'CHECKED_IN').length / 50) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-gray-400">Expected Arrivals</span>
+                    <span className="text-sm font-bold text-gray-200">{todayBookings.length} / 50</span>
+                  </div>
+                  <div className="w-full bg-black/20 rounded-full h-3 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        (todayBookings.length / 50) > 0.8
+                          ? 'bg-red-500'
+                          : (todayBookings.length / 50) > 0.6
+                          ? 'bg-orange-500'
+                          : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${(todayBookings.length / 50) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                {(todayBookings.length / 50) > 0.8 && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-orange-400" />
+                    <p className="text-sm text-orange-400">
+                      Approaching daily capacity limit. Monitor incoming visitors closely.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mt-12">
@@ -107,15 +187,15 @@ const StaffDashboard = () => {
               <div className="glass-card-premium p-8">
                 <h3 className="text-xl font-bold mb-8">Live Action Center</h3>
                 <div className="grid grid-cols-2 gap-4">
-                   <button className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 hover:bg-white/10 transition-all group">
+                   <button onClick={handleFastCheckIn} className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 hover:bg-white/10 transition-all group">
                       <CheckCircle className="w-8 h-8 text-emerald-400 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-semibold">Fast Check-in</span>
                    </button>
-                   <button className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 hover:bg-white/10 transition-all group">
+                   <button onClick={handleTourAssist} className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 hover:bg-white/10 transition-all group">
                       <Compass className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-semibold">Tour Assist</span>
                    </button>
-                   <button className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 hover:bg-white/10 transition-all group col-span-2">
+                   <button onClick={handleIncidentReport} className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 hover:bg-white/10 transition-all group col-span-2">
                       <FileText className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
                       <span className="text-sm font-semibold">Incident Report</span>
                    </button>
@@ -219,8 +299,236 @@ const StaffDashboard = () => {
           </div>
         )}
 
+        {/* Notifications */}
+        {activeTab === 'notifications' && <NotificationsList />}
+
+        {/* Activity Logs */}
+        {activeTab === 'logs' && (
+          <div className="glass-card-premium overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="p-8 border-b border-white/5">
+              <h2 className="text-2xl font-black tracking-tight mb-1">Activity Logs</h2>
+              <p className="text-xs text-gray-500 italic">Operational activity log for {new Date().toLocaleDateString()}</p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white/[0.02] text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">
+                    <th className="p-6">Timestamp</th>
+                    <th className="p-6">Activity Type</th>
+                    <th className="p-6">Visitor</th>
+                    <th className="p-6">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {activityLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="p-20 text-center text-gray-600 italic font-light">No activity logs recorded for this cycle.</td>
+                    </tr>
+                  ) : (
+                    // Check-ins
+                    activityLogs.checkins?.map((log) => (
+                      <tr key={log.bookingId} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-6">
+                          <span className="text-xs text-gray-400">{new Date().toLocaleTimeString()}</span>
+                        </td>
+                        <td className="p-6">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-400">
+                            Check-in
+                          </span>
+                        </td>
+                        <td className="p-6">
+                          <p className="font-semibold">{log.user?.firstName} {log.user?.lastName}</p>
+                        </td>
+                        <td className="p-6 text-xs text-gray-500">
+                          Booking #{log.bookingId}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                  {activityLogs.checkouts?.map((log) => (
+                    <tr key={log.bookingId} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-6">
+                        <span className="text-xs text-gray-400">{new Date().toLocaleTimeString()}</span>
+                      </td>
+                      <td className="p-6">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400">
+                          Check-out
+                        </span>
+                      </td>
+                      <td className="p-6">
+                        <p className="font-semibold">{log.user?.firstName} {log.user?.lastName}</p>
+                      </td>
+                      <td className="p-6 text-xs text-gray-500">
+                        Booking #{log.bookingId}
+                      </td>
+                    </tr>
+                  ))}
+                  {activityLogs.cancellations?.map((log) => (
+                    <tr key={log.bookingId} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-6">
+                        <span className="text-xs text-gray-400">{new Date().toLocaleTimeString()}</span>
+                      </td>
+                      <td className="p-6">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-500/10 text-red-400">
+                          Cancelled
+                        </span>
+                      </td>
+                      <td className="p-6">
+                        <p className="font-semibold">{log.user?.firstName} {log.user?.lastName}</p>
+                      </td>
+                      <td className="p-6 text-xs text-gray-500">
+                        Booking #{log.bookingId}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'profile' && <Profile />}
         {activeTab === 'settings' && <Settings />}
+
+        {/* Tour Assist Modal */}
+        {showTourAssistModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card-premium max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                  <Compass className="w-6 h-6 text-blue-400" />
+                  Tour Assistance
+                </h2>
+                <button onClick={() => setShowTourAssistModal(false)} className="text-gray-500 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-8 space-y-6">
+                <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-6 border border-white/5">
+                  <h3 className="text-lg font-bold mb-4 text-blue-400">RUGEZI Marshland Contact Information</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-200">Main Office</p>
+                        <p className="text-sm text-gray-500">RUGEZI Marshland Administration</p>
+                        <p className="text-sm text-gray-500">Rwanda, East Africa</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <MessageSquare className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-200">Emergency Hotline</p>
+                        <p className="text-sm text-gray-500">+250 788 XXX XXX</p>
+                        <p className="text-sm text-gray-500">Available 24/7</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                        <Mail className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-200">Email Support</p>
+                        <p className="text-sm text-gray-500">support@rugezimarshland.rw</p>
+                        <p className="text-sm text-gray-500">info@rugezimarshland.rw</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/[0.02] rounded-2xl p-6 border border-white/5">
+                  <h3 className="text-lg font-bold mb-4 text-gray-200">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button className="p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all flex items-center gap-3">
+                      <Phone className="w-5 h-5 text-emerald-400" />
+                      <span className="text-sm font-semibold">Call Emergency</span>
+                    </button>
+                    <button className="p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all flex items-center gap-3">
+                      <MapPin className="w-5 h-5 text-blue-400" />
+                      <span className="text-sm font-semibold">View Map</span>
+                    </button>
+                    <button className="p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-purple-400" />
+                      <span className="text-sm font-semibold">Safety Guide</span>
+                    </button>
+                    <button className="p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all flex items-center gap-3">
+                      <Activity className="w-5 h-5 text-orange-400" />
+                      <span className="text-sm font-semibold">First Aid</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-orange-500/10 rounded-2xl p-6 border border-orange-500/20">
+                  <h3 className="text-lg font-bold mb-3 text-orange-400 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Important Notice
+                  </h3>
+                  <p className="text-sm text-gray-400">
+                    For emergencies, always contact the main office first. Staff are available 24/7 for assistance.
+                    Do not attempt to handle wildlife emergencies without proper training.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Incident Report Modal */}
+        {showIncidentReportModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card-premium max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                  Incident Report
+                </h2>
+                <button onClick={() => setShowIncidentReportModal(false)} className="text-gray-500 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-8 space-y-6">
+                <form className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Incident Type</label>
+                    <select className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all">
+                      <option value="">Select incident type...</option>
+                      <option value="visitor">Visitor Emergency</option>
+                      <option value="wildlife">Wildlife Incident</option>
+                      <option value="equipment">Equipment Failure</option>
+                      <option value="weather">Weather-related</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Location</label>
+                    <input type="text" placeholder="Where did the incident occur?" className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Description</label>
+                    <textarea rows="4" placeholder="Describe what happened..." className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all resize-none"></textarea>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Severity</label>
+                    <div className="flex gap-3">
+                      <button type="button" className="flex-1 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-semibold hover:bg-emerald-500/20 transition-all">Low</button>
+                      <button type="button" className="flex-1 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-orange-400 text-sm font-semibold hover:bg-orange-500/20 transition-all">Medium</button>
+                      <button type="button" className="flex-1 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-semibold hover:bg-red-500/20 transition-all">High</button>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button type="button" onClick={() => setShowIncidentReportModal(false)} className="flex-1 py-3 bg-white/5 border border-white/5 rounded-xl text-sm font-semibold hover:bg-white/10 transition-all">Cancel</button>
+                    <button type="submit" className="flex-1 py-3 bg-red-600 hover:bg-red-500 rounded-xl text-sm font-semibold text-white transition-all">Submit Report</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

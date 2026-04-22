@@ -2,10 +2,12 @@ package com.rugezi.marshland.config;
 
 import com.rugezi.marshland.entity.Species;
 import com.rugezi.marshland.entity.SpeciesType;
+import com.rugezi.marshland.entity.Tour;
 import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.entity.UserRole;
 import com.rugezi.marshland.entity.VisitDate;
 import com.rugezi.marshland.service.SpeciesService;
+import com.rugezi.marshland.service.TourService;
 import com.rugezi.marshland.service.UserService;
 import com.rugezi.marshland.service.VisitDateService;
 import org.springframework.boot.CommandLineRunner;
@@ -20,13 +22,16 @@ public class DataInitializer implements CommandLineRunner {
     private final UserService userService;
     private final SpeciesService speciesService;
     private final VisitDateService visitDateService;
+    private final TourService tourService;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserService userService, SpeciesService speciesService,
-                           VisitDateService visitDateService, PasswordEncoder passwordEncoder) {
+                           VisitDateService visitDateService, TourService tourService,
+                           PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.speciesService = speciesService;
         this.visitDateService = visitDateService;
+        this.tourService = tourService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -36,6 +41,7 @@ public class DataInitializer implements CommandLineRunner {
         initializeUsers();
         initializeSpecies();
         initializeVisitDates();
+        initializeTours();
         System.out.println("Data initialization completed successfully");
     }
 
@@ -168,6 +174,41 @@ public class DataInitializer implements CommandLineRunner {
 
                 visitDateService.createVisitDate(newVisitDate);
             }
+        }
+    }
+
+    private void initializeTours() {
+        // Create sample tours
+        if (tourService.getAllActiveTours().isEmpty()) {
+            Tour birdWatching = new Tour();
+            birdWatching.setTitle("Bird Watching");
+            birdWatching.setDescription("Guided tour through the north marshes to observe rare bird species in their natural habitat.");
+            birdWatching.setCategory("Wildlife");
+            birdWatching.setPrice(25.0);
+            birdWatching.setDurationHours(3);
+            birdWatching.setMaxParticipants(10);
+            birdWatching.setImageUrl("https://images.unsplash.com/photo-1444464666168-49d633b86797?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80");
+            tourService.createTour(birdWatching);
+
+            Tour photographySafari = new Tour();
+            photographySafari.setTitle("Photography Safari");
+            photographySafari.setDescription("Private access to sunrise locations for capturing stunning marshland wildlife photography.");
+            photographySafari.setCategory("Photography");
+            photographySafari.setPrice(45.0);
+            photographySafari.setDurationHours(4);
+            photographySafari.setMaxParticipants(6);
+            photographySafari.setImageUrl("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80");
+            tourService.createTour(photographySafari);
+
+            Tour canoeExpedition = new Tour();
+            canoeExpedition.setTitle("Canoe Expedition");
+            canoeExpedition.setDescription("River passage through dense papyrus reeds with experienced local guides.");
+            canoeExpedition.setCategory("Adventure");
+            canoeExpedition.setPrice(35.0);
+            canoeExpedition.setDurationHours(3);
+            canoeExpedition.setMaxParticipants(8);
+            canoeExpedition.setImageUrl("https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80");
+            tourService.createTour(canoeExpedition);
         }
     }
 }

@@ -75,13 +75,17 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> 
+                .authorizeHttpRequests(auth ->
                     auth.requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/profile").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/species/**").permitAll()
-                        .requestMatchers("/api/gallery/photos/**").permitAll()
+                        .requestMatchers("/api/tours/**").permitAll()
+                        .requestMatchers("/api/gallery/photos").authenticated()
+                        .requestMatchers("/api/gallery/photos/**").authenticated()
+                        .requestMatchers("/api/gallery/upload").hasAnyRole("ADMIN", "ECOLOGIST")
                         .requestMatchers("/api/gallery/files/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
@@ -98,6 +102,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/feedback/**").authenticated()
                         .requestMatchers("/api/visit-dates/**").authenticated()
                         .requestMatchers("/api/analytics/**").hasAnyAuthority("ADMIN", "ECOLOGIST")
+                        .requestMatchers("/api/notifications/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers

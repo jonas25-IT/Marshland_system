@@ -172,14 +172,17 @@ public class SpeciesService {
         }
 
         // Generate unique filename
-        String fileName = speciesId + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        String originalFilename = file.getOriginalFilename();
+        // Remove spaces and special characters from filename for web compatibility
+        String sanitizedFilename = originalFilename != null ? originalFilename.replaceAll("[^a-zA-Z0-9.]", "_") : "image.jpg";
+        String fileName = speciesId + "_" + System.currentTimeMillis() + "_" + sanitizedFilename;
         java.nio.file.Path filePath = java.nio.file.Paths.get(uploadDir, fileName);
         
         // Save file
         java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Update species record with the retrievable URL
-        String imageUrl = "http://localhost:8083/uploads/" + fileName;
+        String imageUrl = "http://localhost:8083/uploads/species/" + fileName;
         species.setImageUrl(imageUrl);
         speciesRepository.save(species);
         

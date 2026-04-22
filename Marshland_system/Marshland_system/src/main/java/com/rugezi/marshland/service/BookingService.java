@@ -5,6 +5,7 @@ import com.rugezi.marshland.entity.BookingStatus;
 import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.entity.VisitDate;
 import com.rugezi.marshland.repository.BookingRepository;
+import com.rugezi.marshland.repository.UserRepository;
 import com.rugezi.marshland.repository.VisitDateRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,15 +17,16 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class BookingService {
     
     private final BookingRepository bookingRepository;
     private final VisitDateRepository visitDateRepository;
+    private final UserRepository userRepository;
     
-    public BookingService(BookingRepository bookingRepository, VisitDateRepository visitDateRepository) {
+    public BookingService(BookingRepository bookingRepository, VisitDateRepository visitDateRepository, UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
         this.visitDateRepository = visitDateRepository;
+        this.userRepository = userRepository;
     }
     
     public Booking createBooking(Booking booking) {
@@ -39,6 +41,7 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
     
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public Booking approveBooking(Long bookingId, User admin) {
         System.out.println(">>> Approving booking ID: " + bookingId);
         try {
@@ -50,31 +53,15 @@ public class BookingService {
                 throw new RuntimeException("Booking is not in pending status");
             }
 
-            // Fetch VisitDate separately to avoid lazy loading issues
-            System.out.println(">>> Fetching VisitDate ID: " + booking.getVisitDate().getDateId());
-            VisitDate visitDate = visitDateRepository.findById(booking.getVisitDate().getDateId())
-                .orElseThrow(() -> new RuntimeException("Visit date not found"));
+            // Use native SQL query to update status directly
+            System.out.println(">>> Using native query to update booking status...");
+            int updated = bookingRepository.updateBookingStatusToApprovedNative(bookingId, LocalDateTime.now());
+            System.out.println(">>> Updated " + updated + " row(s)");
 
-            System.out.println(">>> VisitDate current bookings: " + visitDate.getCurrentBookings());
-            System.out.println(">>> VisitDate max capacity: " + visitDate.getMaxCapacity());
-            System.out.println(">>> Booking visitors: " + booking.getNumberOfVisitors());
-
-            if (!visitDate.hasAvailableCapacity(booking.getNumberOfVisitors())) {
-                throw new RuntimeException("Not enough capacity available for approval");
-            }
-
-            booking.approve(admin);
-            int newCurrentBookings = visitDate.getCurrentBookings() + booking.getNumberOfVisitors();
-            System.out.println(">>> New current bookings: " + newCurrentBookings);
-            visitDate.setCurrentBookings(newCurrentBookings);
-
-            System.out.println(">>> Saving VisitDate...");
-            VisitDate savedVisitDate = visitDateRepository.save(visitDate);
-            System.out.println(">>> VisitDate saved successfully");
-
-            System.out.println(">>> Saving Booking...");
-            Booking savedBooking = bookingRepository.save(booking);
-            System.out.println(">>> Booking saved successfully");
+            // Refresh the booking to get the updated state
+            bookingRepository.flush();
+            Booking savedBooking = bookingRepository.findById(bookingId).get();
+            System.out.println(">>> Booking approved successfully");
 
             return savedBooking;
         } catch (Exception e) {

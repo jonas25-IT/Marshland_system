@@ -100,11 +100,11 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
       console.log('Upload mode:', uploadMode);
       console.log('Form data entries:', Array.from(formData.entries()));
 
-      let imageUrl = editingPhoto?.image_url || '';
+      let imageUrl = editingPhoto?.imageUrl || editingPhoto?.image_url || '';
       let metaData = {
-        file_name: 'external_image.jpg',
-        content_type: 'image/jpeg',
-        file_size: 0
+        fileName: 'external_image.jpg',
+        contentType: 'image/jpeg',
+        fileSize: 0
       };
 
       if (uploadMode === 'file') {
@@ -120,9 +120,9 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
         if (uploadResult) {
           imageUrl = 'http://localhost:8083' + uploadResult.imageUrl;
           metaData = {
-            file_name: uploadResult.fileName,
-            content_type: uploadResult.contentType,
-            file_size: uploadResult.fileSize
+            fileName: uploadResult.fileName,
+            contentType: uploadResult.contentType,
+            fileSize: uploadResult.fileSize
           };
         } else {
           toast.error('File upload failed');
@@ -149,17 +149,16 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
         title: formData.get('title'),
         description: formData.get('description'),
         category: formData.get('category'),
-        image_url: imageUrl,
+        imageUrl: imageUrl,
         ...metaData
       };
 
       console.log('Photo payload:', photoPayload);
 
+      const response = editingPhoto ? await api.put(`/gallery/photos/${editingPhoto.photo_id}`, photoPayload) : await api.post('/gallery/photos', photoPayload);
       if (editingPhoto) {
-        await api.put(`/gallery/photos/${editingPhoto.photo_id || editingPhoto.photoId}`, photoPayload);
         toast.success('Capture synchronized');
       } else {
-        await api.post('/gallery/photos', photoPayload);
         toast.success('New moment captured in gallery');
       }
 

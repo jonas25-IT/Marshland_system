@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Calendar, FileText,
   Shield, AlertTriangle, Eye, Edit, Trash2,
   Plus, Search, Filter, Download, RefreshCw,
-  Check, X, Image as ImageIcon, MessageSquare, Leaf, Database
+  Check, X, Image as ImageIcon, MessageSquare, Leaf, Database, Bell
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GalleryManagement from '../components/GalleryManagement';
@@ -44,6 +44,17 @@ const AdminDashboard = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [reportsData, setReportsData] = useState(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationForm, setNotificationForm] = useState({
+    selectedUserIds: [],
+    title: '',
+    message: '',
+    type: 'INFO',
+    link: ''
+  });
+  const [broadcastToAll, setBroadcastToAll] = useState(false);
+  const [allNotifications, setAllNotifications] = useState([]);
+  const [editingNotification, setEditingNotification] = useState(null);
   
   const loadData = useCallback(async () => {
     try {
@@ -147,35 +158,135 @@ const AdminDashboard = () => {
       ['Booking Statistics', 'Total Bookings', reportsData.bookingStats?.total || 0],
       ['Booking Statistics', 'Pending', reportsData.bookingStats?.pending || 0],
       ['Booking Statistics', 'Approved', reportsData.bookingStats?.approved || 0],
-      ['Booking Statistics', 'Cancelled', reportsData.bookingStats?.cancelled || 0],
-      ['Species Statistics', 'Total Species', reportsData.speciesStats?.total || 0],
-      ['Species Statistics', 'Flora', reportsData.speciesStats?.flora || 0],
-      ['Species Statistics', 'Fauna', reportsData.speciesStats?.fauna || 0],
-      ['Species Statistics', 'Endangered', reportsData.speciesStats?.endangered || 0],
+      ['Booking Statistics', 'Rejected', reportsData.bookingStats?.rejected || 0]
     ];
-
-    if (reportsData.financialAnalytics) {
-      csvContent.push(['Financial Analytics', 'Total Revenue', reportsData.financialAnalytics.totalRevenue || 0]);
-      csvContent.push(['Financial Analytics', 'Average Booking Value', reportsData.financialAnalytics.averageBookingValue || 0]);
-      csvContent.push(['Financial Analytics', 'Growth Rate', reportsData.financialAnalytics.growthRate || 0]);
-    }
-
-    if (reportsData.visitorAnalytics) {
-      csvContent.push(['Visitor Analytics', 'Total Visitors', reportsData.visitorAnalytics.totalVisitors || 0]);
-      csvContent.push(['Visitor Analytics', 'Average per Day', reportsData.visitorAnalytics.averagePerDay || 0]);
-      csvContent.push(['Visitor Analytics', 'Peak Day', reportsData.visitorAnalytics.peakDay || 'N/A']);
-    }
 
     const csvString = csvContent.map(row => row.join(',')).join('\n');
     const blob = new Blob([csvString], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `marshland_reports_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = 'marshland_reports.csv';
     a.click();
-    window.URL.revokeObjectURL(url);
-    toast.success('CSV exported successfully');
   };
+
+  const handleCreateNotification = async () => {
+    try {
+      if (broadcastToAll) {
+        // Broadcast to all users
+        console.log('Users available:', users);
+        const allUsers = users.map(u => Number(u.userId));
+        console.log('Broadcasting to all users:', allUsers);
+        await api.post('/notifications/broadcast', {
+          userIds: allUsers,
+          title: notificationForm.title,
+          message: notificationForm.message,
+          type: notificationForm.type,
+          link: notificationForm.link || null
+        });
+        toast.success('Notification broadcasted to all users');
+      } else {
+        // Send to selected users
+        if (notificationForm.selectedUserIds.length === 0) {
+          toast.error('Please select at least one user');
+          return;
+        }
+        const selectedIds = notificationForm.selectedUserIds.map(id => Number(id));
+        console.log('Selected user IDs:', selectedIds);
+        await api.post('/notifications/broadcast', {
+          userIds: selectedIds,
+          title: notificationForm.title,
+          message: notificationForm.message,
+          type: notificationForm.type,
+          link: notificationForm.link || null
+        });
+        toast.success(`Notification sent to ${notificationForm.selectedUserIds.length} user(s)`);
+      }
+      setShowNotificationModal(false);
+      setBroadcastToAll(false);
+      setNotificationForm({
+        selectedUserIds: [],
+        title: '',
+        message: '',
+        type: 'INFO',
+        link: ''
+      });
+      loadAllNotifications();
+    } catch (error) {
+      console.error('Failed to create notification:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.message);
+      if (error.response?.data?.error) {
+        toast.error(`Failed: ${error.response.data.error}`);
+      } else {
+        toast.error('Failed to create notification');
+      }
+    }
+  };
+
+  const loadAllNotifications = async () => {
+    try {
+      const response = await api.get('/notifications/admin/all');
+      setAllNotifications(response.data || []);
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    }
+  };
+
+  const handleEditNotification = (notification) => {
+    setEditingNotification(notification);
+    setNotificationForm({
+      userId: notification.userId,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      link: notification.link || ''
+    });
+    setShowNotificationModal(true);
+  };
+
+  const handleUpdateNotification = async () => {
+    try {
+      const payload = {
+        ...notificationForm,
+        userId: parseInt(notificationForm.userId)
+      };
+      await api.put(`/notifications/admin/${editingNotification.notificationId}`, payload);
+      toast.success('Notification updated successfully');
+      setShowNotificationModal(false);
+      setEditingNotification(null);
+      setNotificationForm({
+        userId: '',
+        title: '',
+        message: '',
+        type: 'INFO',
+        link: ''
+      });
+      loadAllNotifications();
+    } catch (error) {
+      console.error('Failed to update notification:', error);
+      toast.error('Failed to update notification');
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    if (!window.confirm('Are you sure you want to delete this notification?')) return;
+    try {
+      await api.delete(`/notifications/admin/${notificationId}`);
+      toast.success('Notification deleted successfully');
+      loadAllNotifications();
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      toast.error('Failed to delete notification');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      loadAllNotifications();
+    }
+  }, [activeTab]);
 
   const exportUsersCSV = () => {
     if (!users.length) {
@@ -455,15 +566,47 @@ const AdminDashboard = () => {
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-purple-500" /> Platform Growth
                 </h3>
-                <div className="h-64 flex items-end gap-5 px-4 mb-4">
-                  {[35, 65, 45, 85, 60, 75, 95, 55, 80, 100].map((h, i) => (
-                    <div key={i} className="flex-1 bg-white/5 rounded-t-xl relative group transition-all">
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-600/80 to-pink-500/80 rounded-t-xl group-hover:from-purple-500 group-hover:to-pink-400 transition-all shadow-[0_0_15px_rgba(139,92,246,0.1)]" style={{ height: `${h}%` }}></div>
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
-                        {Math.floor(h * 1.5)}%
+                <div className="h-64 relative px-4 mb-4">
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style={{ stopColor: '#8B5CF6', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: '#EC4899', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                    <polyline
+                      fill="none"
+                      stroke="url(#lineGradient)"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={(dashboardData?.platformGrowth || [35, 65, 45, 85, 60, 75, 95, 55, 80, 100]).map((h, i) => {
+                        const x = (i / 9) * 100;
+                        const y = 100 - h;
+                        return `${x},${y}`;
+                      }).join(' ')}
+                    />
+                    {(dashboardData?.platformGrowth || [35, 65, 45, 85, 60, 75, 95, 55, 80, 100]).map((h, i) => (
+                      <circle
+                        key={i}
+                        cx={(i / 9) * 100}
+                        cy={100 - h}
+                        r="3"
+                        fill="#8B5CF6"
+                        className="hover:r-4 transition-all cursor-pointer"
+                      />
+                    ))}
+                  </svg>
+                  <div className="flex items-end gap-5 h-full relative z-10">
+                    {(dashboardData?.platformGrowth || [35, 65, 45, 85, 60, 75, 95, 55, 80, 100]).map((h, i) => (
+                      <div key={i} className="flex-1 bg-white/5 rounded-t-xl relative group transition-all">
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-600/30 to-pink-500/30 rounded-t-xl group-hover:from-purple-500/50 group-hover:to-pink-400/50 transition-all" style={{ height: `${h}%` }}></div>
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity border border-white/10">
+                          {Math.floor(h * 1.5)}%
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
                 <div className="flex justify-between px-2 text-[9px] text-gray-500 font-black uppercase tracking-widest">
                   <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
@@ -483,16 +626,26 @@ const AdminDashboard = () => {
                    <div className="absolute left-[23px] top-4 bottom-4 w-[2px] bg-gradient-to-b from-purple-500/50 via-pink-500/50 to-transparent"></div>
                    
                    <div className="space-y-10">
-                      {(dashboardData?.recentUsers || []).slice(0, 3).map((u) => (
-                        <div key={`user-${u.id || u.userId}`} className="relative pl-14 group">
-                           <div className="absolute left-4 top-1 w-5 h-5 rounded-full bg-[#0D0E14] border-2 border-purple-500 z-10 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-transform group-hover:scale-125"></div>
-                           <div className="flex flex-col">
-                              <span className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">New Identity Registered</span>
-                              <p className="text-sm font-bold text-white tracking-tight">{u.firstName} {u.lastName} <span className="text-gray-500 font-normal">authorized as</span> <span className="text-purple-400">{u.role}</span></p>
-                              <p className="text-[10px] text-gray-600 mt-1 font-mono italic">Database ID: {u.userId || u.id}</p>
-                           </div>
+                      {(dashboardData?.recentUsers && dashboardData.recentUsers.length > 0) ? (
+                        dashboardData.recentUsers.slice(0, 5).map((u) => (
+                          <div key={`user-${u.id || u.userId}`} className="relative pl-14 group">
+                             <div className="absolute left-4 top-1 w-5 h-5 rounded-full bg-[#0D0E14] border-2 border-purple-500 z-10 shadow-[0_0_8px_rgba(168,85,247,0.4)] transition-transform group-hover:scale-125"></div>
+                             <div className="flex flex-col">
+                                <span className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">New Identity Registered</span>
+                                <p className="text-sm font-bold text-white tracking-tight">{u.firstName || 'Unknown'} {u.lastName || ''} <span className="text-gray-500 font-normal">authorized as</span> <span className="text-purple-400">{u.role || 'USER'}</span></p>
+                                <p className="text-[10px] text-gray-600 mt-1 font-mono italic">Database ID: {u.userId || u.id}</p>
+                             </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="relative pl-14">
+                          <div className="absolute left-4 top-1 w-5 h-5 rounded-full bg-[#0D0E14] border-2 border-gray-500 z-10"></div>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">No Recent Activity</span>
+                            <p className="text-sm text-gray-400">Waiting for new user registrations...</p>
+                          </div>
                         </div>
-                      ))}
+                      )}
                       
                       {bookings.slice(0, 2).map((b) => (
                         <div key={`booking-${b.bookingId || b.id}`} className="relative pl-14 group">
@@ -646,6 +799,107 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Notifications Management */}
+        {activeTab === 'notifications' && (
+          <div className="glass-card-premium overflow-hidden">
+            <div className="p-8 border-b border-white/5 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight mb-1">Notifications Management</h2>
+                <p className="text-xs text-gray-500 italic">Create and manage system notifications</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingNotification(null);
+                  setBroadcastToAll(false);
+                  setNotificationForm({
+                    selectedUserIds: [],
+                    title: '',
+                    message: '',
+                    type: 'INFO',
+                    link: ''
+                  });
+                  setShowNotificationModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-bold transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Create Notification
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white/[0.02] text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">
+                    <th className="p-6">ID</th>
+                    <th className="p-6">User ID</th>
+                    <th className="p-6">Title</th>
+                    <th className="p-6">Type</th>
+                    <th className="p-6">Status</th>
+                    <th className="p-6">Created</th>
+                    <th className="p-6">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {allNotifications.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="p-20 text-center text-gray-600 italic font-light">No notifications found</td>
+                    </tr>
+                  ) : (
+                    allNotifications.map((notification) => (
+                      <tr key={notification.notificationId} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-6 font-mono text-xs text-gray-400">#{notification.notificationId}</td>
+                        <td className="p-6 font-semibold">{notification.userId}</td>
+                        <td className="p-6">
+                          <p className="font-semibold">{notification.title}</p>
+                          <p className="text-xs text-gray-500 truncate max-w-xs">{notification.message}</p>
+                        </td>
+                        <td className="p-6">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                            notification.type === 'INFO' ? 'bg-blue-500/10 text-blue-400' :
+                            notification.type === 'WARNING' ? 'bg-orange-500/10 text-orange-400' :
+                            notification.type === 'ERROR' ? 'bg-red-500/10 text-red-400' :
+                            notification.type === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400' :
+                            notification.type === 'ALERT' ? 'bg-purple-500/10 text-purple-400' :
+                            'bg-gray-500/10 text-gray-400'
+                          }`}>
+                            {notification.type}
+                          </span>
+                        </td>
+                        <td className="p-6">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                            notification.isRead ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'
+                          }`}>
+                            {notification.isRead ? 'Read' : 'Unread'}
+                          </span>
+                        </td>
+                        <td className="p-6 text-xs text-gray-500">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </td>
+                        <td className="p-6">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditNotification(notification)}
+                              className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNotification(notification.notificationId)}
+                              className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Species Management */}
         {activeTab === 'species' && (
           <div className="glass-card-premium overflow-hidden">
@@ -726,6 +980,126 @@ const AdminDashboard = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* System Monitoring */}
+        {activeTab === 'monitoring' && (
+          <div className="glass-card-premium overflow-hidden">
+            <div className="p-8 border-b border-white/5">
+              <h2 className="text-2xl font-black tracking-tight mb-1">System Monitoring</h2>
+              <p className="text-xs text-gray-500 italic">Real-time system activity and data integrity</p>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-emerald-500/10 rounded-2xl p-6 border border-emerald-500/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Activity className="w-6 h-6 text-emerald-400" />
+                    <h3 className="font-bold text-emerald-400">System Status</h3>
+                  </div>
+                  <p className="text-3xl font-bold mb-2">Operational</p>
+                  <p className="text-xs text-gray-500">All services running normally</p>
+                </div>
+                <div className="bg-blue-500/10 rounded-2xl p-6 border border-blue-500/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Database className="w-6 h-6 text-blue-400" />
+                    <h3 className="font-bold text-blue-400">Database</h3>
+                  </div>
+                  <p className="text-3xl font-bold mb-2">Connected</p>
+                  <p className="text-xs text-gray-500">MySQL connection stable</p>
+                </div>
+                <div className="bg-purple-500/10 rounded-2xl p-6 border border-purple-500/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Shield className="w-6 h-6 text-purple-400" />
+                    <h3 className="font-bold text-purple-400">Security</h3>
+                  </div>
+                  <p className="text-3xl font-bold mb-2">Secure</p>
+                  <p className="text-xs text-gray-500">JWT authentication active</p>
+                </div>
+              </div>
+
+              <div className="bg-white/[0.02] rounded-2xl p-6 border border-white/5">
+                <h3 className="text-lg font-bold mb-4 text-gray-200">Recent Access Logs</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <UserCheck className="w-4 h-4 text-emerald-400" />
+                      <span className="text-sm">Admin login successful</span>
+                    </div>
+                    <span className="text-xs text-gray-500">2 minutes ago</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-4 h-4 text-blue-400" />
+                      <span className="text-sm">New user registration</span>
+                    </div>
+                    <span className="text-xs text-gray-500">15 minutes ago</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-4 h-4 text-purple-400" />
+                      <span className="text-sm">Booking approval completed</span>
+                    </div>
+                    <span className="text-xs text-gray-500">1 hour ago</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* System Configuration */}
+        {activeTab === 'config' && (
+          <div className="glass-card-premium overflow-hidden">
+            <div className="p-8 border-b border-white/5 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight mb-1">System Configuration</h2>
+                <p className="text-xs text-gray-500 italic">Manage system-wide settings and capacities</p>
+              </div>
+              <button
+                onClick={() => setShowNotificationModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-xl text-sm font-bold transition-all"
+              >
+                <Bell className="w-4 h-4" />
+                Create Notification
+              </button>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="bg-white/[0.02] rounded-2xl p-6 border border-white/5">
+                <h3 className="text-lg font-bold mb-4 text-gray-200">Daily Visit Capacity</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Default Max Capacity</label>
+                    <input type="number" defaultValue="50" className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Peak Hours Capacity</label>
+                    <input type="number" defaultValue="75" className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/[0.02] rounded-2xl p-6 border border-white/5">
+                <h3 className="text-lg font-bold mb-4 text-gray-200">Booking Settings</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Auto-approve Bookings</label>
+                    <select className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all">
+                      <option value="false">Manual Approval Required</option>
+                      <option value="true">Auto-approve All Bookings</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Cancellation Window (hours)</label>
+                    <input type="number" defaultValue="24" className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all" />
+                  </div>
+                </div>
+              </div>
+
+              <button className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-sm font-semibold text-white transition-all">
+                Save Configuration
+              </button>
             </div>
           </div>
         )}
@@ -899,6 +1273,146 @@ const AdminDashboard = () => {
 
         {/* User Profile */}
         {activeTab === 'profile' && <Profile />}
+
+        {/* Notification Creation Modal */}
+        {showNotificationModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card-premium max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                  <Bell className="w-6 h-6 text-purple-400" />
+                  {editingNotification ? 'Edit Notification' : 'Create Notification'}
+                </h2>
+                <button onClick={() => {
+                  setShowNotificationModal(false);
+                  setEditingNotification(null);
+                  setBroadcastToAll(false);
+                }} className="text-gray-500 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-8 space-y-6">
+                {!editingNotification && (
+                  <div className="flex items-center gap-3 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                    <input
+                      type="checkbox"
+                      id="broadcastToAll"
+                      checked={broadcastToAll}
+                      onChange={(e) => setBroadcastToAll(e.target.checked)}
+                      className="w-5 h-5 rounded border-purple-500/30 bg-black/20 text-purple-500 focus:ring-purple-500/30"
+                    />
+                    <label htmlFor="broadcastToAll" className="text-sm font-semibold text-purple-300 cursor-pointer">
+                      Broadcast to all users in the system
+                    </label>
+                  </div>
+                )}
+                {!broadcastToAll && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Select Users</label>
+                    <div className="bg-black/20 border border-white/5 rounded-xl p-4 max-h-48 overflow-y-auto">
+                      {users.length === 0 ? (
+                        <p className="text-gray-500 text-sm">No users available</p>
+                      ) : (
+                        users.map((user) => (
+                          <label key={user.userId} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notificationForm.selectedUserIds.includes(user.userId)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNotificationForm({
+                                    ...notificationForm,
+                                    selectedUserIds: [...notificationForm.selectedUserIds, user.userId]
+                                  });
+                                } else {
+                                  setNotificationForm({
+                                    ...notificationForm,
+                                    selectedUserIds: notificationForm.selectedUserIds.filter(id => id !== user.userId)
+                                  });
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-purple-500/30 bg-black/20 text-purple-500 focus:ring-purple-500/30"
+                            />
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm">{user.username}</p>
+                              <p className="text-xs text-gray-500">{user.email} - {user.role}</p>
+                            </div>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {notificationForm.selectedUserIds.length} user(s) selected
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Title</label>
+                  <input
+                    type="text"
+                    value={notificationForm.title}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+                    placeholder="Notification title"
+                    className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Message</label>
+                  <textarea
+                    rows="4"
+                    value={notificationForm.message}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+                    placeholder="Notification message"
+                    className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Type</label>
+                  <select
+                    value={notificationForm.type}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, type: e.target.value })}
+                    className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all"
+                  >
+                    <option value="INFO">INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="SUCCESS">SUCCESS</option>
+                    <option value="BOOKING">BOOKING</option>
+                    <option value="SYSTEM">SYSTEM</option>
+                    <option value="ALERT">ALERT</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Link (Optional)</label>
+                  <input
+                    type="text"
+                    value={notificationForm.link}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, link: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/30 transition-all"
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowNotificationModal(false);
+                      setEditingNotification(null);
+                    }}
+                    className="flex-1 py-3 bg-white/5 border border-white/5 rounded-xl text-sm font-semibold hover:bg-white/10 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={editingNotification ? handleUpdateNotification : handleCreateNotification}
+                    className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-sm font-semibold text-white transition-all"
+                  >
+                    {editingNotification ? 'Update Notification' : 'Create Notification'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Global Settings */}
         {activeTab === 'settings' && <Settings />}

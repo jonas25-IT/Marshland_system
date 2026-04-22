@@ -16,6 +16,7 @@ import Settings from '../components/Settings';
 import Profile from '../components/Profile';
 import GalleryManagement from '../components/GalleryManagement';
 import RugeziMap from '../components/RugeziMap';
+import NotificationsList from '../components/NotificationsList';
 
 const EcologistDashboardEnhanced = () => {
   const { user, logout, api } = useAuth();
@@ -28,6 +29,9 @@ const EcologistDashboardEnhanced = () => {
   const [editingSpecies, setEditingSpecies] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Helper function to construct full image URL
   const getImageUrl = (imageUrl, fallbackKeyword = 'nature') => {
@@ -37,13 +41,17 @@ const EcologistDashboardEnhanced = () => {
     }
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       // Replace hardcoded port 8081 with 8083 if present
-      const url = imageUrl.replace(':8081', ':8083');
+      let url = imageUrl.replace(':8081', ':8083');
+      // Ensure species images have /species/ in the path for compatibility
+      if (url.includes('/uploads/') && !url.includes('/uploads/species/')) {
+        url = url.replace('/uploads/', '/uploads/species/');
+      }
       console.log('Image URL (HTTP):', url);
       return url;
     }
-    // Backend serves static files at http://localhost:8083/uploads/**
-    // Ensure imageUrl starts with /uploads
-    const path = imageUrl.startsWith('/') ? imageUrl : `/uploads/${imageUrl}`;
+    // Backend serves static files at http://localhost:8083/uploads/species/**
+    // Ensure imageUrl starts with /uploads/species
+    const path = imageUrl.startsWith('/') ? imageUrl : `/uploads/species/${imageUrl}`;
     const fullUrl = `http://localhost:8083${path}`;
     console.log('Image URL (Local):', fullUrl);
     return fullUrl;
@@ -85,6 +93,55 @@ const EcologistDashboardEnhanced = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Notification functions
+  const loadNotifications = async () => {
+    try {
+      const response = await api.get('/notifications');
+      setNotifications(response.data || []);
+      setUnreadCount(response.data.filter(n => !n.isRead).length);
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await api.put(`/notifications/${notificationId}/read`);
+      setNotifications(notifications.map(n =>
+        n.notificationId === notificationId
+          ? { ...n, isRead: true, readAt: new Date().toISOString() }
+          : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(`Failed: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await api.put('/notifications/read-all');
+      setNotifications(notifications.map(n => ({
+        ...n,
+        isRead: true,
+        readAt: new Date().toISOString()
+      })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(`Failed: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadNotifications();
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -192,7 +249,7 @@ const EcologistDashboardEnhanced = () => {
           >
             <ImageIcon className="w-5 h-5" /> Gallery
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`w-full sidebar-item ${activeTab === 'analytics' ? 'sidebar-item-active' : ''}`}
           >
@@ -212,8 +269,13 @@ const EcologistDashboardEnhanced = () => {
           </button>
           
           <div className="pt-8 pb-4 text-xs font-semibold text-gray-500 uppercase px-4">System</div>
-          <button className="w-full sidebar-item"><Bell className="w-5 h-5" /> Announcements</button>
-          <button 
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`w-full sidebar-item ${activeTab === 'notifications' ? 'sidebar-item-active' : ''}`}
+          >
+            <Bell className="w-5 h-5" /> Notifications
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`w-full sidebar-item ${activeTab === 'settings' ? 'sidebar-item-active' : ''}`}
           >
@@ -248,18 +310,70 @@ const EcologistDashboardEnhanced = () => {
                 className="bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 w-64 focus:outline-none focus:border-purple-500/50 transition-all font-light"
               />
             </div>
-            <div className="bg-white/5 border border-white/10 p-2 rounded-xl cursor-pointer hover:bg-white/10 relative">
-              <Bell className="w-5 h-5 text-gray-400" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-pink-500 rounded-full border-2 border-[#0D0E14]"></span>
+            <div className="relative group">
+              <button
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (showNotifications) loadNotifications();
+                }}
+                className="bg-white/5 border border-white/10 p-2 rounded-xl cursor-pointer hover:bg-white/10 relative"
+              >
+                <Bell className="w-5 h-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-white/5">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute top-full right-0 mt-2 w-80 glass-card-premium border border-white/10 shadow-2xl z-50 max-h-96 overflow-y-auto">
+                  <div className="p-4 border-b border-white/5 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-200">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+                  {notifications.length === 0 ? (
+                    <p className="p-4 text-sm text-gray-500 text-center">No notifications</p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.notificationId}
+                        onClick={() => markAsRead(notification.notificationId)}
+                        className={`p-4 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${!notification.isRead ? 'bg-white/[0.02]' : ''}`}
+                      >
+                        <p className="text-sm font-semibold mb-1">{notification.title}</p>
+                        <p className="text-xs text-gray-400 mb-2">{notification.message}</p>
+                        <p className="text-[10px] text-gray-500">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-              <div className="text-right">
-                <p className="text-sm font-semibold">{user?.firstName} {user?.lastName}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+            <div className="flex items-center gap-4 pl-4 border-l border-white/10 relative group">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold tracking-tight opacity-90">{user?.firstName} {user?.lastName}</p>
+                <p className="text-[10px] text-purple-500 font-black uppercase tracking-widest leading-none">{user?.role}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-xl flex items-center justify-center font-bold text-white">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </div>
+
+              <button className="relative cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95">
+                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 p-[2px] shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                  <div className="w-full h-full rounded-full bg-[#0D0E14] flex items-center justify-center border border-white/5 overflow-hidden">
+                    <span className="text-xs font-black text-white tracking-widest uppercase">
+                      {(user?.firstName?.charAt(0) || '') + (user?.lastName?.charAt(0) || (user?.firstName ? '' : 'U'))}
+                    </span>
+                  </div>
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#0D0E14] rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+              </button>
             </div>
           </div>
         </header>
@@ -480,6 +594,9 @@ const EcologistDashboardEnhanced = () => {
             </div>
           </div>
         )}
+
+        {/* Notifications */}
+        {activeTab === 'notifications' && <NotificationsList />}
 
         {/* User Profile */}
         {activeTab === 'profile' && <Profile />}
