@@ -5,7 +5,28 @@
 ### Prerequisites
 - GitHub repository with the code
 - Render account (free tier available)
-- PostgreSQL database on Render
+- MySQL database (external provider) OR switch to PostgreSQL
+
+### Important Note About MySQL
+**Render does not support MySQL databases natively.** They only support PostgreSQL. Since your application uses MySQL, you have three options:
+
+1. **Use an external MySQL provider** (recommended for keeping MySQL)
+2. **Switch to PostgreSQL** (recommended for Render compatibility)
+3. **Use Render's PostgreSQL** (requires code changes)
+
+### Option 1: External MySQL Provider
+Use a cloud MySQL service like:
+- **PlanetScale** (free tier available)
+- **AWS RDS** (paid)
+- **Google Cloud SQL** (paid)
+- **Azure Database for MySQL** (paid)
+- **Neon** (PostgreSQL-based but MySQL-compatible)
+
+#### Using PlanetScale (Recommended for MySQL)
+1. Create a free account at [PlanetScale](https://planetscale.com/)
+2. Create a new database
+3. Get the connection string (MySQL format)
+4. Use the connection string in Render environment variables
 
 ### Step 1: Push Code to GitHub
 Ensure all your code is pushed to GitHub:
@@ -15,70 +36,48 @@ git commit -m "Add Render deployment configuration"
 git push
 ```
 
-### Step 2: Create Render Services
+### Step 2: Create External MySQL Database (PlanetScale)
+1. Go to [PlanetScale](https://planetscale.com/) and create a free account
+2. Create a new database named `marshland_db`
+3. Get the connection string (format: `mysql://user:password@host/database`)
+4. Copy the connection details
 
-#### Option A: Using render.yaml (Recommended)
-1. Go to [Render Dashboard](https://dashboard.render.com/)
-2. Click "New" > "Blueprint"
-3. Connect your GitHub repository
-4. Render will automatically detect and deploy based on `render.yaml`
+### Step 3: Create Render Services (Manual Setup)
 
-#### Option B: Manual Setup
-1. **Create PostgreSQL Database**
-   - Go to Render Dashboard > New > PostgreSQL
-   - Name: `marshland-db`
-   - Database: `marshland_db`
-   - User: `marshland_user`
-   - Region: Choose closest to your users
-   - Click "Create Database"
+#### Backend Service
+1. Go to Render Dashboard > New > Web Service
+2. Connect your GitHub repository
+3. Name: `marshland-backend`
+4. Runtime: Java
+5. Build Command: `./mvnw clean package -DskipTests`
+6. Start Command: `java -jar Marshland_system/target/Marshland_system-0.0.1-SNAPSHOT.jar`
+7. Add Environment Variables:
+   - `SPRING_DATASOURCE_URL`: Your PlanetScale MySQL connection string
+   - `SPRING_DATASOURCE_USERNAME`: Your PlanetScale username
+   - `SPRING_DATASOURCE_PASSWORD`: Your PlanetScale password
+   - `SPRING_JPA_HIBERNATE_DDL_AUTO`: `update`
+   - `SERVER_PORT`: `8080`
+   - `SPRING_PROFILES_ACTIVE`: `prod`
+   - `app.upload.dir`: `/tmp/uploads`
 
-2. **Create Backend Service**
-   - Go to Render Dashboard > New > Web Service
-   - Connect your GitHub repository
-   - Name: `marshland-backend`
-   - Runtime: Java
-   - Build Command: `./mvnw clean package -DskipTests`
-   - Start Command: `java -jar Marshland_system/target/Marshland_system-0.0.1-SNAPSHOT.jar`
-   - Add Environment Variables:
-     - `SPRING_DATASOURCE_URL`: From database connection string
-     - `SPRING_DATASOURCE_USERNAME`: From database
-     - `SPRING_DATASOURCE_PASSWORD`: From database
-     - `SPRING_JPA_HIBERNATE_DDL_AUTO`: `update`
-     - `SERVER_PORT`: `8080`
-     - `SPRING_PROFILES_ACTIVE`: `prod`
-
-3. **Create Frontend Service**
-   - Go to Render Dashboard > New > Web Service
-   - Connect your GitHub repository
-   - Name: `marshland-frontend`
-   - Runtime: Node
-   - Root Directory: `frontend`
-   - Build Command: `npm install && npm run build`
-   - Start Command: `npm start`
-   - Add Environment Variables:
-     - `REACT_APP_API_URL`: `https://marshland-backend.onrender.com`
-     - `PORT`: `3000`
-
-### Step 3: Configure Environment Variables
-
-#### Backend Environment Variables
-- `SPRING_DATASOURCE_URL`: PostgreSQL connection string
-- `SPRING_DATASOURCE_USERNAME`: Database username
-- `SPRING_DATASOURCE_PASSWORD`: Database password
-- `SPRING_JPA_HIBERNATE_DDL_AUTO`: `update` (for initial setup)
-- `SERVER_PORT`: `8080`
-- `SPRING_PROFILES_ACTIVE`: `prod`
-- `app.upload.dir`: `/tmp/uploads`
-
-#### Frontend Environment Variables
-- `REACT_APP_API_URL`: Backend URL (e.g., `https://marshland-backend.onrender.com`)
+#### Frontend Service
+1. Go to Render Dashboard > New > Web Service
+2. Connect your GitHub repository
+3. Name: `marshland-frontend`
+4. Runtime: Node
+5. Root Directory: `frontend`
+6. Build Command: `npm install && npm run build`
+7. Start Command: `npm start`
+8. Add Environment Variables:
+   - `REACT_APP_API_URL`: `https://marshland-backend.onrender.com`
+   - `PORT`: `3000`
 
 ### Step 4: Upload Directory Setup
 The application uses `/tmp/uploads` for file storage on Render. This directory is ephemeral and will be reset on each deployment. For persistent storage, consider using Render's Disk feature or an external object storage service.
 
 ### Step 5: Test the Deployment
 1. Wait for both services to finish deploying
-2. Access the frontend at: `https://marshland-backend.onrender.com`
+2. Access the frontend at: `https://marshland-frontend.onrender.com`
 3. Test user registration and login
 4. Test file uploads (may fail due to ephemeral storage)
 5. Test booking system
@@ -86,9 +85,10 @@ The application uses `/tmp/uploads` for file storage on Render. This directory i
 ### Troubleshooting
 
 #### Database Connection Issues
-- Ensure PostgreSQL database is running
-- Check connection string format
+- Ensure PlanetScale MySQL database is running
+- Check connection string format (should be MySQL format)
 - Verify database credentials
+- Ensure PlanetScale allows connections from Render's IP addresses
 
 #### File Upload Issues
 - `/tmp/uploads` is ephemeral - files will be lost on redeploy
@@ -116,12 +116,12 @@ The application uses `/tmp/uploads` for file storage on Render. This directory i
 ### Cost Considerations
 - Render Free Tier:
   - Web Services: Free (with sleep after 15 min inactivity)
-  - PostgreSQL: Free (90 day limit)
+  - PlanetScale MySQL: Free tier available (5GB storage, 1 billion reads/month)
   - Disk: Not available on free tier
 
 - For production, consider:
   - Paid web services ($7/month)
-  - Paid PostgreSQL ($7/month)
+  - Paid PlanetScale MySQL ($29/month for larger databases)
   - Disk storage for file uploads
 
 ### Alternative Deployment Options
