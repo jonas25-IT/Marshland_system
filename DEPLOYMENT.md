@@ -10,23 +10,26 @@
 ### Important Note About MySQL
 **Render does not support MySQL databases natively.** They only support PostgreSQL. Since your application uses MySQL, you have three options:
 
-1. **Use an external MySQL provider** (recommended for keeping MySQL)
+1. **Use an external MySQL-compatible provider** (recommended for keeping MySQL)
 2. **Switch to PostgreSQL** (recommended for Render compatibility)
 3. **Use Render's PostgreSQL** (requires code changes)
 
-### Option 1: External MySQL Provider
-Use a cloud MySQL service like:
+### Option 1: External MySQL-Compatible Provider
+Use a cloud MySQL-compatible service like:
+- **TiDB Cloud** (free tier available, MySQL-compatible)
 - **PlanetScale** (free tier available)
 - **AWS RDS** (paid)
 - **Google Cloud SQL** (paid)
 - **Azure Database for MySQL** (paid)
-- **Neon** (PostgreSQL-based but MySQL-compatible)
 
-#### Using PlanetScale (Recommended for MySQL)
-1. Create a free account at [PlanetScale](https://planetscale.com/)
-2. Create a new database
-3. Get the connection string (MySQL format)
-4. Use the connection string in Render environment variables
+#### Using TiDB Cloud (Recommended)
+TiDB Cloud is a distributed SQL database that is fully MySQL-compatible and offers a free tier.
+
+1. Create a free account at [TiDB Cloud](https://tidbcloud.com/)
+2. Create a new cluster (choose Developer tier for free)
+3. Create a database named `marshland_db`
+4. Get the connection string (MySQL format: `mysql://user:password@host:4000/database`)
+5. Use the connection string in Render environment variables
 
 ### Step 1: Push Code to GitHub
 Ensure all your code is pushed to GitHub:
@@ -36,11 +39,12 @@ git commit -m "Add Render deployment configuration"
 git push
 ```
 
-### Step 2: Create External MySQL Database (PlanetScale)
-1. Go to [PlanetScale](https://planetscale.com/) and create a free account
-2. Create a new database named `marshland_db`
-3. Get the connection string (format: `mysql://user:password@host/database`)
-4. Copy the connection details
+### Step 2: Create External MySQL Database (TiDB Cloud)
+1. Go to [TiDB Cloud](https://tidbcloud.com/) and create a free account
+2. Create a new cluster (choose Developer tier for free)
+3. Create a database named `marshland_db`
+4. Get the connection string (format: `mysql://user:password@host:4000/database`)
+5. Copy the connection details
 
 ### Step 3: Create Render Services (Manual Setup)
 
@@ -52,9 +56,9 @@ git push
 5. Build Command: `./mvnw clean package -DskipTests`
 6. Start Command: `java -jar Marshland_system/target/Marshland_system-0.0.1-SNAPSHOT.jar`
 7. Add Environment Variables:
-   - `SPRING_DATASOURCE_URL`: Your PlanetScale MySQL connection string
-   - `SPRING_DATASOURCE_USERNAME`: Your PlanetScale username
-   - `SPRING_DATASOURCE_PASSWORD`: Your PlanetScale password
+   - `SPRING_DATASOURCE_URL`: Your TiDB Cloud MySQL connection string
+   - `SPRING_DATASOURCE_USERNAME`: Your TiDB Cloud username
+   - `SPRING_DATASOURCE_PASSWORD`: Your TiDB Cloud password
    - `SPRING_JPA_HIBERNATE_DDL_AUTO`: `update`
    - `SERVER_PORT`: `8080`
    - `SPRING_PROFILES_ACTIVE`: `prod`
@@ -85,10 +89,10 @@ The application uses `/tmp/uploads` for file storage on Render. This directory i
 ### Troubleshooting
 
 #### Database Connection Issues
-- Ensure PlanetScale MySQL database is running
-- Check connection string format (should be MySQL format)
+- Ensure TiDB Cloud cluster is running
+- Check connection string format (should be MySQL format: `mysql://user:password@host:4000/database`)
 - Verify database credentials
-- Ensure PlanetScale allows connections from Render's IP addresses
+- Ensure TiDB Cloud allows connections from Render's IP addresses (TiDB Cloud has no IP restrictions by default)
 
 #### File Upload Issues
 - `/tmp/uploads` is ephemeral - files will be lost on redeploy
@@ -116,12 +120,12 @@ The application uses `/tmp/uploads` for file storage on Render. This directory i
 ### Cost Considerations
 - Render Free Tier:
   - Web Services: Free (with sleep after 15 min inactivity)
-  - PlanetScale MySQL: Free tier available (5GB storage, 1 billion reads/month)
+  - TiDB Cloud: Free tier available (5GB storage, 1 billion reads/month)
   - Disk: Not available on free tier
 
 - For production, consider:
   - Paid web services ($7/month)
-  - Paid PlanetScale MySQL ($29/month for larger databases)
+  - Paid TiDB Cloud ($29/month for larger databases)
   - Disk storage for file uploads
 
 ### Alternative Deployment Options

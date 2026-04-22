@@ -34,8 +34,11 @@ services:
         value: 3000
 
 # Note: Render does not support MySQL databases natively.
-# You need to use an external MySQL provider or switch to PostgreSQL.
+# You need to use an external MySQL-compatible provider or switch to PostgreSQL.
 # Options:
-# 1. Use an external MySQL database (PlanetScale, AWS RDS, etc.)
+# 1. Use an external MySQL-compatible database (TiDB Cloud, PlanetScale, AWS RDS, etc.)
 # 2. Switch to PostgreSQL (recommended for Render)
 # 3. Use Render's PostgreSQL database (see DEPLOYMENT.md)
+#
+# Recommended: TiDB Cloud (free tier, fully MySQL-compatible)
+# Sign up at: https://tidbcloud.com/
