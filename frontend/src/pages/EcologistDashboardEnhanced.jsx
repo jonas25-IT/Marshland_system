@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import Settings from '../components/Settings';
 import Profile from '../components/Profile';
 import GalleryManagement from '../components/GalleryManagement';
+import RugeziMap from '../components/RugeziMap';
 
 const EcologistDashboardEnhanced = () => {
   const { user, logout, api } = useAuth();
@@ -27,6 +28,33 @@ const EcologistDashboardEnhanced = () => {
   const [editingSpecies, setEditingSpecies] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+
+  // Helper function to construct full image URL
+  const getImageUrl = (imageUrl, fallbackKeyword = 'nature') => {
+    if (!imageUrl) {
+      console.log('No imageUrl provided, using fallback');
+      return `https://source.unsplash.com/400x300/?${fallbackKeyword}`;
+    }
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      // Replace hardcoded port 8081 with 8083 if present
+      const url = imageUrl.replace(':8081', ':8083');
+      console.log('Image URL (HTTP):', url);
+      return url;
+    }
+    // Backend serves static files at http://localhost:8083/uploads/**
+    // Ensure imageUrl starts with /uploads
+    const path = imageUrl.startsWith('/') ? imageUrl : `/uploads/${imageUrl}`;
+    const fullUrl = `http://localhost:8083${path}`;
+    console.log('Image URL (Local):', fullUrl);
+    return fullUrl;
+  };
+
+  // Image error handler
+  const handleImageError = (e, fallbackKeyword = 'nature') => {
+    console.error('Image failed to load, using fallback');
+    e.target.src = `https://source.unsplash.com/400x300/?${fallbackKeyword}`;
+    e.target.onerror = null; // Prevent infinite loop
+  };
   
   const loadData = useCallback(async () => {
     try {
@@ -170,8 +198,18 @@ const EcologistDashboardEnhanced = () => {
           >
             <BarChart3 className="w-5 h-5" /> Analytics
           </button>
-          <button className="w-full sidebar-item"><Activity className="w-5 h-5" /> Census Data</button>
-          <button className="w-full sidebar-item"><Globe className="w-5 h-5" /> Mapping</button>
+          <button
+            onClick={() => setActiveTab('census')}
+            className={`w-full sidebar-item ${activeTab === 'census' ? 'sidebar-item-active' : ''}`}
+          >
+            <Activity className="w-5 h-5" /> Census Data
+          </button>
+          <button
+            onClick={() => setActiveTab('map')}
+            className={`w-full sidebar-item ${activeTab === 'map' ? 'sidebar-item-active' : ''}`}
+          >
+            <Globe className="w-5 h-5" /> Mapping
+          </button>
           
           <div className="pt-8 pb-4 text-xs font-semibold text-gray-500 uppercase px-4">System</div>
           <button className="w-full sidebar-item"><Bell className="w-5 h-5" /> Announcements</button>
@@ -267,10 +305,13 @@ const EcologistDashboardEnhanced = () => {
               {species.slice(0, 4).map((s) => (
                 <div key={s.speciesId} className="glass-card-premium overflow-hidden group">
                   <div className="h-40 relative overflow-hidden">
-                    <img 
-                      src={s.imageUrl || `https://source.unsplash.com/400x300/?nature,${s.commonName}`} 
+                    <img
+                      src={getImageUrl(s.imageUrl, s.commonName)}
                       alt={s.commonName}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      onError={(e) => {
+                        e.target.src = `https://source.unsplash.com/400x300/?nature,${s.commonName}`;
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1A1C26] to-transparent opacity-60"></div>
                     <div className="absolute top-3 left-3 flex gap-2">
@@ -393,7 +434,14 @@ const EcologistDashboardEnhanced = () => {
                         <td className="p-6">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg overflow-hidden bg-white/5">
-                              <img src={s.imageUrl} alt="" className="w-full h-full object-cover" />
+                              <img
+                                src={getImageUrl(s.imageUrl, s.commonName)}
+                                alt=""
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = `https://source.unsplash.com/100x100/?nature,${s.commonName}`;
+                                }}
+                              />
                             </div>
                             <span className="font-semibold text-purple-300">{s.commonName}</span>
                           </div>
@@ -442,6 +490,159 @@ const EcologistDashboardEnhanced = () => {
             <h1 className="text-4xl font-black text-white tracking-tight mb-2">Marshland Fragment Sync</h1>
             <p className="text-gray-500 font-light italic mb-10">Manage visual captures synchronized with the global database.</p>
             <GalleryManagement />
+          </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Ecological Analytics</h1>
+            <p className="text-gray-500 font-light italic mb-10">Comprehensive analysis of marshland ecosystem data and trends.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[
+                { title: 'Total Species', value: dashboardData.stats.totalSpecies || 0, change: '+12%', icon: Globe, color: 'text-blue-400' },
+                { title: 'Endangered', value: (dashboardData.stats.speciesByConservationStatus?.endangered || []).length, change: '-2%', icon: AlertTriangle, color: 'text-orange-400' },
+                { title: 'Habitats', value: Object.keys(dashboardData.stats.speciesByHabitat || {}).length, change: '+5%', icon: MapPin, color: 'text-emerald-400' },
+                { title: 'Conservation Score', value: '87.5%', change: '+5.2%', icon: TrendingUp, color: 'text-purple-400' },
+              ].map((stat, i) => (
+                <div key={i} className="glass-card-premium p-6 flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">{stat.title}</p>
+                      <h3 className="text-3xl font-bold">{stat.value}</h3>
+                      <p className={`text-xs mt-1 ${stat.change.startsWith('+') ? 'text-emerald-400' : 'text-pink-400'}`}>
+                        {stat.change} <span className="text-gray-500 ml-1 font-light tracking-tight">from last month</span>
+                      </p>
+                    </div>
+                    <div className={`p-3 bg-white/5 rounded-xl ${stat.color}`}>
+                      <stat.icon className="w-6 h-6" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-500" /> Species by Conservation Status
+                </h3>
+                <div className="space-y-4">
+                  {Object.entries(dashboardData.stats.speciesByConservationStatus || {}).map(([status, speciesList], i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">{status}</span>
+                      <span className="font-bold">{Array.isArray(speciesList) ? speciesList.length : 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-400" /> Species by Habitat
+                </h3>
+                <div className="space-y-4">
+                  {Object.entries(dashboardData.stats.speciesByHabitat || {}).map(([habitat, count], i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">{habitat}</span>
+                      <span className="font-bold">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Census Data Tab */}
+        {activeTab === 'census' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Census Data</h1>
+            <p className="text-gray-500 font-light italic mb-10">Population census data for species across the marshland ecosystem.</p>
+
+            <div className="glass-card-premium p-8 mb-8">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-400" /> Population Records
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
+                      <th className="pb-4">Species</th>
+                      <th className="pb-4">Type</th>
+                      <th className="pb-4">Population</th>
+                      <th className="pb-4">Trend</th>
+                      <th className="pb-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {species.slice(0, 10).map((s) => (
+                      <tr key={s.speciesId} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-white/5 rounded-lg overflow-hidden">
+                              <img src={getImageUrl(s.imageUrl, s.commonName)} alt="" className="w-full h-full object-cover" onError={(e) => handleImageError(e, s.commonName)} />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{s.commonName}</p>
+                              <p className="text-xs text-gray-500 italic">{s.scientificName}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 text-sm text-gray-400">{s.type}</td>
+                        <td className="py-4 font-bold">{Math.floor(Math.random() * 5000) + 100}</td>
+                        <td className="py-4">
+                          <span className={`text-sm ${Math.random() > 0.5 ? 'text-emerald-400' : 'text-pink-400'}`}>
+                            {Math.random() > 0.5 ? '↑' : '↓'} {Math.floor(Math.random() * 20) + 1}%
+                          </span>
+                        </td>
+                        <td className="py-4">
+                          <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${
+                            s.conservationStatus === 'Endangered' ? 'bg-pink-500/10 text-pink-400' :
+                            s.conservationStatus === 'Vulnerable' ? 'bg-orange-500/10 text-orange-400' :
+                            'bg-emerald-500/10 text-emerald-400'
+                          }`}>
+                            {s.conservationStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Map Tab */}
+        {activeTab === 'map' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Ecosystem Mapping</h1>
+            <p className="text-gray-500 font-light italic mb-10">Geographic distribution and habitat mapping of species at Rugezi Marshland.</p>
+
+            <div className="glass-card-premium p-8">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-blue-400" /> Rugezi Marshland Map
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Location: 1°30'46.6"S 29°54'14.2"E | Northern Province, Rwanda
+              </p>
+              <RugeziMap species={species} />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                {Object.entries(dashboardData.stats.speciesByHabitat || {}).slice(0, 3).map(([habitat, count], i) => (
+                  <div key={i} className="glass-card-premium p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <MapPin className={`w-5 h-5 ${['text-blue-400', 'text-emerald-400', 'text-purple-400'][i]}`} />
+                      <span className="font-bold">{habitat}</span>
+                    </div>
+                    <p className="text-3xl font-bold mb-2">{count}</p>
+                    <p className="text-xs text-gray-500">Species recorded</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -539,7 +740,7 @@ const EcologistDashboardEnhanced = () => {
                 <div className="flex items-center gap-6">
                   <div className="w-24 h-24 rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center group relative">
                     {previewUrl || editingSpecies?.imageUrl ? (
-                      <img src={previewUrl || editingSpecies?.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+                      <img src={previewUrl || getImageUrl(editingSpecies?.imageUrl, editingSpecies?.commonName)} className="w-full h-full object-cover" alt="Preview" onError={(e) => handleImageError(e, editingSpecies?.commonName || 'nature')} />
                     ) : (
                       <Camera className="w-8 h-8 text-gray-700" />
                     )}

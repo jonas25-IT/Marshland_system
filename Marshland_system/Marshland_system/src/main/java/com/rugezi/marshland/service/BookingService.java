@@ -40,27 +40,53 @@ public class BookingService {
     }
     
     public Booking approveBooking(Long bookingId, User admin) {
-        Booking booking = getBookingById(bookingId);
-        
-        if (booking.getBookingStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Booking is not in pending status");
+        System.out.println(">>> Approving booking ID: " + bookingId);
+        try {
+            Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found with id: " + bookingId));
+
+            System.out.println(">>> Booking status: " + booking.getBookingStatus());
+            if (booking.getBookingStatus() != BookingStatus.PENDING) {
+                throw new RuntimeException("Booking is not in pending status");
+            }
+
+            // Fetch VisitDate separately to avoid lazy loading issues
+            System.out.println(">>> Fetching VisitDate ID: " + booking.getVisitDate().getDateId());
+            VisitDate visitDate = visitDateRepository.findById(booking.getVisitDate().getDateId())
+                .orElseThrow(() -> new RuntimeException("Visit date not found"));
+
+            System.out.println(">>> VisitDate current bookings: " + visitDate.getCurrentBookings());
+            System.out.println(">>> VisitDate max capacity: " + visitDate.getMaxCapacity());
+            System.out.println(">>> Booking visitors: " + booking.getNumberOfVisitors());
+
+            if (!visitDate.hasAvailableCapacity(booking.getNumberOfVisitors())) {
+                throw new RuntimeException("Not enough capacity available for approval");
+            }
+
+            booking.approve(admin);
+            int newCurrentBookings = visitDate.getCurrentBookings() + booking.getNumberOfVisitors();
+            System.out.println(">>> New current bookings: " + newCurrentBookings);
+            visitDate.setCurrentBookings(newCurrentBookings);
+
+            System.out.println(">>> Saving VisitDate...");
+            VisitDate savedVisitDate = visitDateRepository.save(visitDate);
+            System.out.println(">>> VisitDate saved successfully");
+
+            System.out.println(">>> Saving Booking...");
+            Booking savedBooking = bookingRepository.save(booking);
+            System.out.println(">>> Booking saved successfully");
+
+            return savedBooking;
+        } catch (Exception e) {
+            System.err.println(">>> Error in approveBooking: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to approve booking: " + e.getMessage(), e);
         }
-        
-        VisitDate visitDate = booking.getVisitDate();
-        
-        if (!visitDate.hasAvailableCapacity(booking.getNumberOfVisitors())) {
-            throw new RuntimeException("Not enough capacity available for approval");
-        }
-        
-        booking.approve(admin);
-        visitDate.setCurrentBookings(visitDate.getCurrentBookings() + booking.getNumberOfVisitors());
-        visitDateRepository.save(visitDate);
-        
-        return bookingRepository.save(booking);
     }
     
     public Booking rejectBooking(Long bookingId, User admin) {
-        Booking booking = getBookingById(bookingId);
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found with id: " + bookingId));
         
         if (booking.getBookingStatus() != BookingStatus.PENDING) {
             throw new RuntimeException("Booking is not in pending status");

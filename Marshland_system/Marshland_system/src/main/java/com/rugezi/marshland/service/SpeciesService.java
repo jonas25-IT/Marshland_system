@@ -60,8 +60,9 @@ public class SpeciesService {
         
         User currentUser = (User) authentication.getPrincipal();
         
-        // Check if user can deactivate (ecologist can only deactivate their own species, admin can deactivate any)
+        // Check if user can deactivate (ecologist and admin can deactivate any species)
         if (!currentUser.getRole().name().equals("ADMIN") && 
+            !currentUser.getRole().name().equals("ECOLOGIST") &&
             !species.getCreatedBy().getUserId().equals(currentUser.getUserId())) {
             throw new RuntimeException("You can only deactivate your own species");
         }
@@ -76,8 +77,9 @@ public class SpeciesService {
         
         User currentUser = (User) authentication.getPrincipal();
         
-        // Check if user can update (ecologist can only update their own species, admin can update any)
+        // Check if user can update (ecologist and admin can update any species)
         if (!currentUser.getRole().name().equals("ADMIN") && 
+            !currentUser.getRole().name().equals("ECOLOGIST") &&
             !species.getCreatedBy().getUserId().equals(currentUser.getUserId())) {
             throw new RuntimeException("You can only update your own species");
         }

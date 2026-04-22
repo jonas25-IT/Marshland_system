@@ -71,13 +71,16 @@ const FeedbackModal = ({ booking, isOpen, onClose, onSubmit }) => {
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <h3 className="font-medium text-gray-800 mb-2">Booking Details</h3>
           <div className="text-sm text-gray-600 space-y-1">
-            <p><span className="font-medium">Date:</span> {booking.visitDate}</p>
+            <p><span className="font-medium">Date:</span> {new Date(booking.visitDate?.visitDate || booking.visitDate).toLocaleDateString()}</p>
             <p><span className="font-medium">Visitors:</span> {booking.numberOfVisitors}</p>
-            <p><span className="font-medium">Status:</span> 
+            <p><span className="font-medium">Status:</span>
               <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                booking.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                booking.bookingStatus === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                booking.bookingStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                booking.bookingStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
               }`}>
-                {booking.status}
+                {booking.bookingStatus}
               </span>
             </p>
           </div>

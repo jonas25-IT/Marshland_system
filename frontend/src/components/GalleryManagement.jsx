@@ -75,10 +75,7 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
     if (!file) return null;
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('title', 'System Capture ' + new Date().getTime());
-    formData.append('category', 'WILDLIFE');
-    formData.append('description', 'Synchronized from local PC');
-    
+
     try {
       const response = await api.post('/gallery/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -100,24 +97,46 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
     setUploading(true);
 
     try {
+      console.log('Upload mode:', uploadMode);
+      console.log('Form data entries:', Array.from(formData.entries()));
+
       let imageUrl = editingPhoto?.image_url || '';
-      let metaData = {};
+      let metaData = {
+        file_name: 'external_image.jpg',
+        content_type: 'image/jpeg',
+        file_size: 0
+      };
 
       if (uploadMode === 'file') {
         const file = formData.get('file');
-        if (file && file.size > 0) {
-          const uploadResult = await handleFileUpload(file);
-          if (uploadResult) {
-            imageUrl = 'http://localhost:8083' + uploadResult.imageUrl;
-            metaData = {
-              file_name: uploadResult.fileName,
-              content_type: uploadResult.contentType,
-              file_size: uploadResult.fileSize
-            };
-          }
+        console.log('File:', file, file?.size);
+        if (!file || file.size === 0) {
+          toast.error('Please select a file to upload');
+          setUploading(false);
+          return;
+        }
+        const uploadResult = await handleFileUpload(file);
+        console.log('Upload result:', uploadResult);
+        if (uploadResult) {
+          imageUrl = 'http://localhost:8083' + uploadResult.imageUrl;
+          metaData = {
+            file_name: uploadResult.fileName,
+            content_type: uploadResult.contentType,
+            file_size: uploadResult.fileSize
+          };
+        } else {
+          toast.error('File upload failed');
+          setUploading(false);
+          return;
         }
       } else {
         imageUrl = formData.get('image_url');
+        console.log('Image URL from form:', imageUrl);
+        if (!imageUrl) {
+          toast.error('Please provide an image URL');
+          setUploading(false);
+          return;
+        }
       }
 
       if (!imageUrl) {
@@ -134,6 +153,8 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
         ...metaData
       };
 
+      console.log('Photo payload:', photoPayload);
+
       if (editingPhoto) {
         await api.put(`/gallery/photos/${editingPhoto.photo_id || editingPhoto.photoId}`, photoPayload);
         toast.success('Capture synchronized');
@@ -147,7 +168,8 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
       setPreviewUrl(null);
       loadPhotos();
     } catch (error) {
-      toast.error('Failed to save to gallery');
+      console.error('Failed to save photo:', error);
+      toast.error('Failed to save to gallery: ' + (error.response?.data?.error || error.message));
     } finally {
       setUploading(false);
     }
@@ -343,6 +365,18 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
                         </div>
                      )}
 
+                     {uploadMode === 'file' && (
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Upload Image</label>
+                           <input type="file" name="file" accept="image/*" onChange={handlePreview} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-sm" />
+                           {previewUrl && (
+                              <div className="mt-2">
+                                 <img src={previewUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
+                              </div>
+                           )}
+                        </div>
+                     )}
+
                      <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Composition Description</label>
                         <textarea name="description" defaultValue={editingPhoto?.description} rows="3" placeholder="Narrate the scenery..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-sm resize-none" />
@@ -352,7 +386,6 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
 
                <div className="flex gap-4 mt-10">
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all">Cancel</button>
-                  <input type="file" name="file" className="hidden" id="gallery-file-final" onChange={handlePreview} />
                   <button type="submit" disabled={uploading} className="flex-1 btn-premium btn-premium-primary !py-4 flex items-center justify-center gap-3">
                      {uploading ? <RefreshCw className="w-4 h-4 animate-spin" /> : (editingPhoto ? 'Update Fragment' : 'Authorize Sync')}
                   </button>

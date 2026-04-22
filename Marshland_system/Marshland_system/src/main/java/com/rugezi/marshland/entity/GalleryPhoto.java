@@ -2,6 +2,7 @@ package com.rugezi.marshland.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -12,28 +13,36 @@ public class GalleryPhoto {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "photo_id")
     private Long photoId;
     
-    @Column(nullable = false, length = 255)
+    @Column(name = "title", nullable = false, length = 255)
     private String title;
-    
-    @Column(nullable = false, length = 1000)
+
+    @Column(name = "description", columnDefinition = "text")
     private String description;
 
+    @Column(name = "content_type", length = 255)
     private String contentType;
 
+    @Column(name = "file_name", length = 255)
     private String fileName;
 
+    @Column(name = "file_size")
     private Long fileSize;
-    
-    @Column(nullable = false, length = 500)
+
+    @Column(name = "image_url", nullable = false, length = 255)
     private String imageUrl;
-    
-    @Column(nullable = false, length = 100)
+
+    @Column(name = "category", nullable = false, length = 255)
     private String category;
     
+    @Column(name = "upload_date", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadDate;
 
+    @Column(name = "last_updated")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastUpdated;
     
     @ManyToOne(fetch = FetchType.LAZY)

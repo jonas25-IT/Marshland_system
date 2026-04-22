@@ -11,13 +11,14 @@ import java.util.List;
 
 @Repository
 public interface GalleryPhotoRepository extends JpaRepository<GalleryPhoto, Long> {
-    
-    // Find all photos
+
+    // Find all photos with custom query to avoid lazy loading issues
+    @Query("SELECT gp FROM GalleryPhoto gp LEFT JOIN FETCH gp.uploadedBy ORDER BY gp.uploadDate DESC")
     List<GalleryPhoto> findAllByOrderByUploadDateDesc();
-    
+
     // Find photos by category
     List<GalleryPhoto> findByCategoryOrderByUploadDateDesc(String category);
-    
+
     // Find photos by uploader
     List<GalleryPhoto> findByUploadedByUserIdOrderByUploadDateDesc(Long userId);
     

@@ -33,9 +33,34 @@ public class BookingController {
     }
     
     @PostMapping("/new")
-    public Booking createBooking(@RequestBody Booking booking, Authentication authentication) {
+    public Booking createBooking(@RequestBody java.util.Map<String, Object> bookingData, Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
+
+        // Extract data from the request
+        String visitDateStr = (String) bookingData.get("visitDate");
+        Integer numberOfVisitors = ((Number) bookingData.get("numberOfVisitors")).intValue();
+        String visitType = (String) bookingData.get("visitType");
+
+        // Parse the date
+        LocalDate visitDate = LocalDate.parse(visitDateStr);
+
+        // Find or create VisitDate
+        VisitDate visitDateEntity = visitDateService.findByVisitDate(visitDate);
+        if (visitDateEntity == null) {
+            visitDateEntity = new VisitDate();
+            visitDateEntity.setVisitDate(visitDate);
+            visitDateEntity.setMaxCapacity(100); // Default capacity
+            visitDateEntity.setCurrentBookings(0);
+            visitDateEntity = visitDateService.createVisitDate(visitDateEntity);
+        }
+
+        // Create booking
+        Booking booking = new Booking();
         booking.setUser(currentUser);
+        booking.setVisitDate(visitDateEntity);
+        booking.setNumberOfVisitors(numberOfVisitors);
+        booking.setSpecialRequests(visitType); // Store visitType in specialRequests
+
         return bookingService.createBooking(booking);
     }
     

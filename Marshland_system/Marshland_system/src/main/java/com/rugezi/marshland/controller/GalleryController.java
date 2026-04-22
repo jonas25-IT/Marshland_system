@@ -32,7 +32,7 @@ public class GalleryController {
     
     // CREATE - Upload new photo
     @PostMapping("/photos")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST', 'STAFF')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> createPhoto(@RequestBody GalleryPhoto photo, Authentication authentication) {
         try {
             User user = (User) authentication.getPrincipal();
@@ -45,7 +45,7 @@ public class GalleryController {
     
     // FILE UPLOAD - Upload image file and return URL
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST', 'STAFF')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
@@ -107,9 +107,17 @@ public class GalleryController {
     
     // READ - Get all active photos
     @GetMapping("/photos")
-    public ResponseEntity<List<GalleryPhoto>> getAllPhotos() {
-        List<GalleryPhoto> photos = galleryPhotoService.getAllPhotos();
-        return ResponseEntity.ok(photos);
+    public ResponseEntity<?> getAllPhotos() {
+        try {
+            System.out.println(">>> Fetching all photos from gallery");
+            List<GalleryPhoto> photos = galleryPhotoService.getAllPhotos();
+            System.out.println(">>> Found " + photos.size() + " photos");
+            return ResponseEntity.ok(photos);
+        } catch (Exception e) {
+            System.err.println(">>> Error fetching photos: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
     
     // READ - Get photo by ID

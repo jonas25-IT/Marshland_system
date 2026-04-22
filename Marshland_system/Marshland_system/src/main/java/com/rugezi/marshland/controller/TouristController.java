@@ -34,28 +34,33 @@ public class TouristController {
     
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> getTouristDashboard(Authentication authentication) {
-        User currentUser = (User) authentication.getPrincipal();
-        Map<String, Object> dashboard = new HashMap<>();
-        
-        // User profile info
-        dashboard.put("userInfo", Map.of(
-            "name", currentUser.getFirstName(),
-            "email", currentUser.getEmail(),
-            "memberSince", currentUser.getCreatedAt()
-        ));
-        
-        // Booking overview
-        dashboard.put("totalBookings", bookingService.getBookingsByUser(currentUser).size());
-        dashboard.put("upcomingBookings", bookingService.getUpcomingBookingsForUser(currentUser));
-        dashboard.put("pastBookings", bookingService.getPastBookingsForUser(currentUser));
-        
-        // Featured species for tourists
-        dashboard.put("featuredSpecies", speciesService.getFeaturedSpecies(6));
-        
-        // Recent feedback
-        dashboard.put("myFeedback", feedbackService.getFeedbackByUser(currentUser, 3));
-        
-        return ResponseEntity.ok(dashboard);
+        try {
+            User currentUser = (User) authentication.getPrincipal();
+            Map<String, Object> dashboard = new HashMap<>();
+
+            // User profile info
+            dashboard.put("userInfo", Map.of(
+                "name", currentUser.getFirstName(),
+                "email", currentUser.getEmail(),
+                "memberSince", currentUser.getCreatedAt()
+            ));
+
+            // Booking overview
+            dashboard.put("totalBookings", bookingService.getBookingsByUser(currentUser).size());
+            dashboard.put("upcomingBookings", bookingService.getUpcomingBookingsForUser(currentUser));
+            dashboard.put("pastBookings", bookingService.getPastBookingsForUser(currentUser));
+
+            // Featured species for tourists
+            dashboard.put("featuredSpecies", speciesService.getFeaturedSpecies(6));
+
+            // Recent feedback
+            dashboard.put("myFeedback", feedbackService.getFeedbackByUser(currentUser, 3));
+
+            return ResponseEntity.ok(dashboard);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
     
     @PostMapping("/bookings/create")

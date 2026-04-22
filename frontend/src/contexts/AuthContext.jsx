@@ -115,15 +115,21 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
       
-      if (token && user) {
+      if (token) {
         try {
-          const userData = JSON.parse(user);
+          // Fetch full user profile from backend
+          const response = await api.get('/auth/profile');
+          const userData = response.data;
+          
           // Ensure role is clean (remove ROLE_ prefix if present)
           if (userData.role && userData.role.startsWith('ROLE_')) {
             userData.role = userData.role.replace('ROLE_', '');
           }
+          
+          // Store full user data in localStorage
+          localStorage.setItem('user', JSON.stringify(userData));
+          
           dispatch({
             type: AUTH_SUCCESS,
             payload: {
@@ -132,10 +138,31 @@ export const AuthProvider = ({ children }) => {
             },
           });
         } catch (error) {
-          dispatch({
-            type: AUTH_FAILURE,
-            payload: 'Invalid authentication data',
-          });
+          console.error('Failed to fetch user profile:', error);
+          // If profile fetch fails, try to use stored user data as fallback
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            try {
+              const userData = JSON.parse(storedUser);
+              if (userData.role && userData.role.startsWith('ROLE_')) {
+                userData.role = userData.role.replace('ROLE_', '');
+              }
+              dispatch({
+                type: AUTH_SUCCESS,
+                payload: {
+                  user: userData,
+                  token: token,
+                },
+              });
+            } catch (parseError) {
+              dispatch({
+                type: AUTH_FAILURE,
+                payload: 'Invalid authentication data',
+              });
+            }
+          } else {
+            dispatch({ type: LOGOUT });
+          }
         }
       } else {
         // No authentication data - user needs to login
@@ -149,36 +176,45 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password) => {
     dispatch({ type: AUTH_START });
-    
+
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { token, email: userEmail, roles, id } = response.data;
-      
+      const { token } = response.data;
+
+      // Store token
+      localStorage.setItem('token', token);
+
+      // Fetch full user profile to get firstName and lastName
+      const profileResponse = await api.get('/auth/profile');
+      const userData = profileResponse.data;
+
       // Clean role format - remove "ROLE_" prefix if present
       let cleanRole = 'TOURIST';
-      if (roles && roles.length > 0) {
-        cleanRole = roles[0].replace('ROLE_', '');
-      } else if (response.data.role) {
-        cleanRole = response.data.role.replace('ROLE_', '');
+      if (userData.role && userData.role.startsWith('ROLE_')) {
+        cleanRole = userData.role.replace('ROLE_', '');
+      } else if (userData.role) {
+        cleanRole = userData.role;
       }
-      
+
       const user = {
-        id,
-        email: userEmail,
+        userId: userData.userId,
+        id: userData.userId,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         role: cleanRole,
-        name: userEmail.split('@')[0],
+        phone: userData.phone,
       };
-      
+
       // Store in localStorage
-      localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       dispatch({
         type: AUTH_SUCCESS,
         payload: { user, token },
       });
-      
-      toast.success(`Welcome back, ${user.name}!`);
+
+      toast.success(`Welcome back, ${user.firstName}!`);
       return { success: true, user };
     } catch (error) {
       const message = error.response?.data || 'Login failed';

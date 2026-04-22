@@ -29,7 +29,12 @@ public class GalleryPhotoService {
     
     // READ - Get all photos
     public List<GalleryPhoto> getAllPhotos() {
-        return galleryPhotoRepository.findAllByOrderByUploadDateDesc();
+        try {
+            return galleryPhotoRepository.findAllByOrderByUploadDateDesc();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch photos: " + e.getMessage(), e);
+        }
     }
     
     // READ - Get photo by ID

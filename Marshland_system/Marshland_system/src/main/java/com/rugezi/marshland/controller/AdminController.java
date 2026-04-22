@@ -304,8 +304,9 @@ public class AdminController {
     }
     
     // ==================== GALLERY MANAGEMENT ====================
-    
+
     @GetMapping("/gallery/photos")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST')")
     public ResponseEntity<?> getAllGalleryPhotos() {
         try {
             return ResponseEntity.ok(galleryPhotoService.getAllPhotos());
@@ -313,8 +314,9 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
+
     @GetMapping("/gallery/photos/{photoId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST')")
     public ResponseEntity<?> getGalleryPhotoById(@PathVariable Long photoId) {
         try {
             return ResponseEntity.ok(galleryPhotoService.getPhotoById(photoId));
@@ -322,8 +324,9 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
+
     @PostMapping("/gallery/photos")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST')")
     public ResponseEntity<?> createGalleryPhoto(@RequestBody GalleryPhoto photo, Authentication authentication) {
         try {
             User admin = (User) authentication.getPrincipal();
@@ -333,8 +336,9 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
+
     @PutMapping("/gallery/photos/{photoId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST')")
     public ResponseEntity<?> updateGalleryPhoto(@PathVariable Long photoId, @RequestBody GalleryPhoto photoDetails) {
         try {
             GalleryPhoto updatedPhoto = galleryPhotoService.updatePhoto(photoId, photoDetails);
@@ -343,8 +347,9 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
+
     @DeleteMapping("/gallery/photos/{photoId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST')")
     public ResponseEntity<?> deleteGalleryPhoto(@PathVariable Long photoId) {
         try {
             galleryPhotoService.deletePhoto(photoId);
@@ -364,6 +369,7 @@ public class AdminController {
     }
     
     @GetMapping("/gallery/photos/categories")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ECOLOGIST')")
     public ResponseEntity<?> getGalleryCategories() {
         try {
             return ResponseEntity.ok(galleryPhotoService.getAllCategories());
