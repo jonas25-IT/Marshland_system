@@ -24,14 +24,25 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Helper function to construct full image URL
-  const getImageUrl = (imageUrl) => {
-    if (!imageUrl) return null;
+  const getImageUrl = (imageUrl, fallbackKeyword = 'nature') => {
+    if (!imageUrl) {
+      return `https://source.unsplash.com/100x100/?${fallbackKeyword}`;
+    }
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       // Replace hardcoded port 8081 with 8083 if present
-      return imageUrl.replace(':8081', ':8083');
+      let url = imageUrl.replace(':8081', ':8083');
+      // Ensure species images have /species/ in the path for compatibility
+      if (url.includes('/uploads/') && !url.includes('/uploads/species/')) {
+        url = url.replace('/uploads/', '/uploads/species/');
+      }
+      return url;
     }
+    // Backend serves static files at /uploads/species/**
+    // Ensure imageUrl starts with /uploads/species
+    const path = imageUrl.startsWith('/') ? imageUrl : `/uploads/species/${imageUrl}`;
     const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
-    return `${backendUrl}${imageUrl}`;
+    const fullUrl = `${backendUrl}${path}`;
+    return fullUrl;
   };
   
   const [users, setUsers] = useState([]);
@@ -935,7 +946,7 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-4">
                            <div className="w-10 h-10 rounded-xl bg-white/5 overflow-hidden border border-white/10">
                               <img
-                                src={getImageUrl(s.imageUrl) || `https://source.unsplash.com/100x100/?nature,${s.commonName}`}
+                                src={getImageUrl(s.imageUrl, s.commonName)}
                                 className="w-full h-full object-cover"
                                 alt={s.commonName}
                                 onError={(e) => {
