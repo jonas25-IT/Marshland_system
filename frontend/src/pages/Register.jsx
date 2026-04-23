@@ -148,6 +148,7 @@ const Register = () => {
                 <input
                   name="phone"
                   type="tel"
+                  autoComplete="tel"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm focus:outline-none focus:border-purple-500/30 transition-all placeholder:text-gray-700"
                   placeholder="e.g. +250..."
                   value={formData.phone}
