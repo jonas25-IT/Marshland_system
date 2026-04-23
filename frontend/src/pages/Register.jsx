@@ -85,6 +85,7 @@ const Register = () => {
                     name="firstName"
                     type="text"
                     required
+                    autoComplete="given-name"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm focus:outline-none focus:border-purple-500/30 transition-all placeholder:text-gray-700"
                     placeholder="e.g. John"
                     value={formData.firstName}
@@ -105,6 +106,7 @@ const Register = () => {
                     name="lastName"
                     type="text"
                     required
+                    autoComplete="family-name"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm focus:outline-none focus:border-purple-500/30 transition-all placeholder:text-gray-700"
                     placeholder="e.g. Doe"
                     value={formData.lastName}
@@ -126,6 +128,7 @@ const Register = () => {
                   name="email"
                   type="email"
                   required
+                  autoComplete="email"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm focus:outline-none focus:border-purple-500/30 transition-all placeholder:text-gray-700"
                   placeholder="name@rugezi.rw"
                   value={formData.email}
@@ -226,6 +229,7 @@ const Register = () => {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       required
+                      autoComplete="new-password"
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-white text-sm focus:outline-none focus:border-purple-500/30 transition-all placeholder:text-gray-700"
                       placeholder="Min 6 chars"
                       value={formData.password}
@@ -250,6 +254,7 @@ const Register = () => {
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-white text-sm focus:outline-none focus:border-purple-500/30 transition-all placeholder:text-gray-700"
                   placeholder="Repeat passphrase"
                   value={formData.confirmPassword}
