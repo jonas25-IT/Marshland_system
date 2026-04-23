@@ -5,7 +5,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import {
   Leaf, Home as HomeIcon, LogOut, Plus, Search,
   BarChart3, Activity, Globe, Bell, Settings as SettingsIcon,
-  Database, Users, Calendar, Map, Camera, LayoutGrid, FileText, X
+  Database, Users, Calendar, Map, Camera, LayoutGrid, FileText, X, Menu
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,8 @@ const DashboardLayout = ({ children, activeTab, onTabChange }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -102,60 +104,120 @@ const DashboardLayout = ({ children, activeTab, onTabChange }) => {
 
   return (
     <div className="min-h-screen flex dashboard-bg font-sans transition-colors duration-300">
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 sidebar-gradient flex flex-col fixed h-screen z-20">
-        <div className="p-8 flex items-center gap-3">
-          <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl shadow-lg shadow-purple-500/20">
+      <aside className={`
+        ${isSidebarCollapsed ? 'w-16' : 'w-64'} 
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+        lg:translate-x-0 
+        sidebar-gradient flex flex-col fixed h-screen z-20 transition-all duration-300 ease-in-out
+      `}>
+        {/* Sidebar Header */}
+        <div className={`p-4 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
+          <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl shadow-lg shadow-purple-500/20 flex-shrink-0">
             <Leaf className="w-6 h-6 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight text-glow">Marshland</span>
+          {!isSidebarCollapsed && (
+            <span className="font-bold text-xl tracking-tight text-glow">Marshland</span>
+          )}
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
+        {/* Navigation */}
+        <nav className="flex-1 px-2 space-y-2 overflow-y-auto custom-scrollbar">
           {roleItems.map((item) => (
             <button 
               key={item.id}
-              onClick={() => onTabChange ? onTabChange(item.id) : null}
-              className={`w-full sidebar-item ${activeTab === item.id ? 'sidebar-item-active' : ''}`}
+              onClick={() => {
+                onTabChange ? onTabChange(item.id) : null;
+                setIsSidebarOpen(false); // Close mobile menu after selection
+              }}
+              className={`w-full sidebar-item ${activeTab === item.id ? 'sidebar-item-active' : ''} ${isSidebarCollapsed ? 'justify-center' : ''}`}
+              title={isSidebarCollapsed ? item.label : ''}
             >
-              <item.icon className="w-5 h-5" /> {item.label}
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {!isSidebarCollapsed && <span className="ml-3">{item.label}</span>}
             </button>
           ))}
           
-          <div className="pt-8 pb-4 text-xs font-semibold text-gray-500 uppercase px-4">{t.system}</div>
+          {!isSidebarCollapsed && (
+            <div className="pt-8 pb-4 text-xs font-semibold text-gray-500 uppercase px-4">{t.system}</div>
+          )}
           <button
-            onClick={() => onTabChange('notifications')}
-            className={`w-full sidebar-item ${activeTab === 'notifications' ? 'sidebar-item-active' : ''}`}
+            onClick={() => {
+              onTabChange('notifications');
+              setIsSidebarOpen(false); // Close mobile menu after selection
+            }}
+            className={`w-full sidebar-item ${activeTab === 'notifications' ? 'sidebar-item-active' : ''} ${isSidebarCollapsed ? 'justify-center' : ''}`}
+            title={isSidebarCollapsed ? 'Notifications' : ''}
           >
-            <Bell className="w-5 h-5" /> Notifications
+            <Bell className="w-5 h-5 flex-shrink-0" />
+            {!isSidebarCollapsed && <span className="ml-3">Notifications</span>}
+            {unreadCount > 0 && !isSidebarCollapsed && (
+              <span className="ml-auto w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
           <button
-            onClick={() => onTabChange('settings')}
-            className={`w-full sidebar-item ${activeTab === 'settings' ? 'sidebar-item-active' : ''}`}
+            onClick={() => {
+              onTabChange('settings');
+              setIsSidebarOpen(false); // Close mobile menu after selection
+            }}
+            className={`w-full sidebar-item ${activeTab === 'settings' ? 'sidebar-item-active' : ''} ${isSidebarCollapsed ? 'justify-center' : ''}`}
+            title={isSidebarCollapsed ? 'Settings' : ''}
           >
-            <SettingsIcon className="w-5 h-5" /> {t.settings}
+            <SettingsIcon className="w-5 h-5 flex-shrink-0" />
+            {!isSidebarCollapsed && <span className="ml-3">{t.settings}</span>}
           </button>
         </nav>
 
-        <div className="p-4 border-t border-white/5">
+        {/* Logout Button */}
+        <div className={`p-2 border-t border-white/5 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
           <button 
             onClick={handleLogout}
-            className="w-full sidebar-item text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            className={`w-full sidebar-item text-red-400 hover:bg-red-500/10 hover:text-red-300 ${isSidebarCollapsed ? 'justify-center' : ''}`}
+            title={isSidebarCollapsed ? 'Logout' : ''}
           >
-            <LogOut className="w-5 h-5" /> {t.logout}
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {!isSidebarCollapsed && <span className="ml-3">{t.logout}</span>}
+          </button>
+        </div>
+
+        {/* Collapse Toggle (Desktop Only) */}
+        <div className="hidden lg:flex absolute -right-3 top-8">
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="w-6 h-6 bg-gray-800 rounded-full border border-white/10 flex items-center justify-center hover:bg-gray-700 transition-colors"
+          >
+            <X className={`w-3 h-3 text-gray-400 transition-transform ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 p-8 min-h-screen">
+      <main className={`flex-1 transition-all duration-300 ease-in-out min-h-screen ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'} ml-0 p-4 lg:p-8`}>
         {/* Top Header */}
-        <header className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-3xl font-bold mb-1 capitalize tracking-tight">{userRole.toLowerCase()} Panel</h1>
-            <p className="text-gray-400 font-light italic">System status: <span className="text-emerald-400 font-medium">Synced</span></p>
+        <header className="flex justify-between items-center mb-6 lg:mb-10">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="lg:hidden p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-gray-400" />
+          </button>
+
+          <div className="flex-1">
+            <h1 className="text-2xl lg:text-3xl font-bold mb-1 capitalize tracking-tight">{userRole.toLowerCase()} Panel</h1>
+            <p className="text-sm lg:text-base text-gray-400 font-light italic">System status: <span className="text-emerald-400 font-medium">Synced</span></p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 lg:gap-4">
             <div
               className="bg-white/5 border border-white/10 p-2 rounded-xl cursor-pointer hover:bg-white/10 relative group"
               onClick={() => {
@@ -170,7 +232,7 @@ const DashboardLayout = ({ children, activeTab, onTabChange }) => {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-4 pl-4 border-l border-white/10 relative group">
+            <div className="flex items-center gap-2 lg:gap-4 pl-2 lg:pl-4 border-l border-white/10 relative group">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold tracking-tight opacity-90">{user?.firstName} {user?.lastName}</p>
                 <p className="text-[10px] text-purple-500 font-black uppercase tracking-widest leading-none">{user?.role}</p>
@@ -194,7 +256,7 @@ const DashboardLayout = ({ children, activeTab, onTabChange }) => {
               {showNotifications && (
                 <>
                   <div className="fixed inset-0 z-[60]" onClick={() => setShowNotifications(false)}></div>
-                  <div className="absolute top-[calc(100%+15px)] right-0 w-96 glass-card-premium border border-white/10 shadow-2xl z-[70] p-0 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-[calc(100%+15px)] right-0 w-80 sm:w-96 glass-card-premium border border-white/10 shadow-2xl z-[70] p-0 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                       <h3 className="font-bold text-gray-200">Notifications</h3>
                       {unreadCount > 0 && (

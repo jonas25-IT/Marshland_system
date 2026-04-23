@@ -6,8 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "vite build --mode analyze",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "test": "echo \"No tests specified\" && exit 0",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "autoprefixer": "^10.4.17",
@@ -33,6 +37,8 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "globals": "^15.0.0",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "typescript": "^5.2.2",
     "vite": "^5.1.0"
   }
 }
