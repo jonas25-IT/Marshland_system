@@ -1,19 +1,11 @@
 package com.rugezi.marshland.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "system_activities")
-@Data
-@Builder(toBuilder = true)
-@NoArgsConstructor
-@AllArgsConstructor
 public class SystemActivity {
     
     @Id
@@ -61,6 +53,59 @@ public class SystemActivity {
     
     @Column(columnDefinition = "TEXT")
     private String errorMessage; // Error message if action failed
+    
+    // Constructors
+    public SystemActivity() {}
+    
+    public SystemActivity(Long id, String action, String entityType, String entityId, String entityName, String performedBy, String performedByRole, String description, String oldValue, String newValue, LocalDateTime timestamp, String ipAddress, String userAgent, Boolean success, String errorMessage) {
+        this.id = id;
+        this.action = action;
+        this.entityType = entityType;
+        this.entityId = entityId;
+        this.entityName = entityName;
+        this.performedBy = performedBy;
+        this.performedByRole = performedByRole;
+        this.description = description;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+        this.timestamp = timestamp;
+        this.ipAddress = ipAddress;
+        this.userAgent = userAgent;
+        this.success = success;
+        this.errorMessage = errorMessage;
+    }
+    
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getAction() { return action; }
+    public void setAction(String action) { this.action = action; }
+    public String getEntityType() { return entityType; }
+    public void setEntityType(String entityType) { this.entityType = entityType; }
+    public String getEntityId() { return entityId; }
+    public void setEntityId(String entityId) { this.entityId = entityId; }
+    public String getEntityName() { return entityName; }
+    public void setEntityName(String entityName) { this.entityName = entityName; }
+    public String getPerformedBy() { return performedBy; }
+    public void setPerformedBy(String performedBy) { this.performedBy = performedBy; }
+    public String getPerformedByRole() { return performedByRole; }
+    public void setPerformedByRole(String performedByRole) { this.performedByRole = performedByRole; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getOldValue() { return oldValue; }
+    public void setOldValue(String oldValue) { this.oldValue = oldValue; }
+    public String getNewValue() { return newValue; }
+    public void setNewValue(String newValue) { this.newValue = newValue; }
+    public LocalDateTime getTimestamp() { return timestamp; }
+    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+    public String getUserAgent() { return userAgent; }
+    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
+    public Boolean getSuccess() { return success; }
+    public void setSuccess(Boolean success) { this.success = success; }
+    public String getErrorMessage() { return errorMessage; }
+    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
     
     @PrePersist
     protected void onCreate() {

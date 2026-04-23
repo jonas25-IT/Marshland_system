@@ -2,8 +2,8 @@ package com.rugezi.marshland.service;
 
 import com.rugezi.marshland.entity.SystemActivity;
 import com.rugezi.marshland.repository.SystemActivityRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -15,11 +15,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class SystemActivityService {
     
+    private static final Logger log = LoggerFactory.getLogger(SystemActivityService.class);
+    
     private final SystemActivityRepository systemActivityRepository;
+    
+    public SystemActivityService(SystemActivityRepository systemActivityRepository) {
+        this.systemActivityRepository = systemActivityRepository;
+    }
     
     /**
      * Log a system activity

@@ -1,7 +1,7 @@
 package com.rugezi.marshland.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,10 +16,6 @@ import java.util.Collections;
 @Table(name = "`user`", indexes = {
     @Index(name = "idx_user_email", columnList = "email")
 })
-@Getter
-@Setter
-@AllArgsConstructor
-@Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User implements UserDetails {
     
