@@ -93,22 +93,22 @@ const SystemActivityMonitor = () => {
   const loadTabActivities = async (tab) => {
     setActiveTab(tab);
     try {
-      let url = '/api/system-activity';
+      let url = '/system-activity';
       switch (tab) {
         case 'logins':
-          url = '/api/system-activity/logins';
+          url = '/system-activity/logins';
           break;
         case 'booking-decisions':
-          url = '/api/system-activity/booking-decisions';
+          url = '/system-activity/booking-decisions';
           break;
         case 'deletions':
-          url = '/api/system-activity/deletions';
+          url = '/system-activity/deletions';
           break;
         case 'failed':
-          url = '/api/system-activity/failed';
+          url = '/system-activity/failed';
           break;
         default:
-          url = '/api/system-activity/recent';
+          url = '/system-activity/recent';
       }
 
       const response = await api.get(url);
