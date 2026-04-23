@@ -4,7 +4,7 @@ services:
   # Backend Spring Boot Application
   backend:
     build:
-      context: ./Marshland_system/Marshland_system
+      context: ./backend
       dockerfile: Dockerfile
     container_name: marshland-backend
     ports:
@@ -19,7 +19,7 @@ services:
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - UPLOAD_DIR=/app/uploads
     volumes:
-      - ./Marshland_system/Marshland_system/uploads:/app/uploads
+      - ./backend/uploads:/app/uploads
     depends_on:
       - mysql
       - redis
@@ -66,7 +66,7 @@ services:
       - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./Marshland_system/Marshland_system/src/main/resources/rugezi_marshland_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/src/main/resources/rugezi_marshland_db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - marshland-network
     restart: unless-stopped

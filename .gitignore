@@ -1,0 +1,30 @@
+# ===== IDE Files =====
+**/.idea/
+**/*.iml
+*.iws
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+.vscode/
+
+# ===== OS Files =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Build Artifacts =====
+backend/target/
+frontend/dist/
+frontend/node_modules/
+
+# ===== Environment =====
+.env
+.env.local
+.env.*.local
+
+# ===== Logs =====
+*.log
+npm-debug.log*

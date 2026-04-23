@@ -4,8 +4,8 @@ services:
     name: marshland-backend
     runtime: java
     plan: free
-    buildCommand: cd Marshland_system/Marshland_system && ./mvnw clean package -DskipTests
-    startCommand: java -jar Marshland_system/Marshland_system/target/Marshland_system-0.0.1-SNAPSHOT.jar
+    buildCommand: cd backend && ./mvnw clean package -DskipTests
+    startCommand: java -jar backend/target/marshland-0.0.1-SNAPSHOT.jar
     envVars:
       - key: SPRING_DATASOURCE_URL
         value: ${SPRING_DATASOURCE_URL}
@@ -38,7 +38,7 @@ services:
 # Options:
 # 1. Use an external MySQL-compatible database (TiDB Cloud, PlanetScale, AWS RDS, etc.)
 # 2. Switch to PostgreSQL (recommended for Render)
-# 3. Use Render's PostgreSQL database (see DEPLOYMENT.md)
+# 3. Use Render's PostgreSQL database (see docs/DEPLOYMENT.md)
 #
 # Recommended: TiDB Cloud (free tier, fully MySQL-compatible)
 # Sign up at: https://tidbcloud.com/

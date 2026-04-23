@@ -4,11 +4,11 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'Marshland_system/**'
+      - 'backend/**'
   pull_request:
     branches: [ main ]
     paths:
-      - 'Marshland_system/**'
+      - 'backend/**'
 
 jobs:
   build-and-test:
@@ -16,7 +16,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: ./Marshland_system/Marshland_system
+        working-directory: ./backend
         
     steps:
     - name: Checkout code
@@ -28,7 +28,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
-        cache-dependency-path: Marshland_system/Marshland_system/pom.xml
+        cache-dependency-path: backend/pom.xml
         
     - name: Make Maven wrapper executable
       run: chmod +x ./mvnw
@@ -43,7 +43,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: backend-jar
-        path: Marshland_system/Marshland_system/target/marshland-*.jar
+        path: backend/target/marshland-*.jar
         retention-days: 30
         
   security-scan:
@@ -52,7 +52,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: ./Marshland_system/Marshland_system
+        working-directory: ./backend
         
     steps:
     - name: Checkout code
@@ -104,7 +104,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./Marshland_system/Marshland_system
+        context: ./backend
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

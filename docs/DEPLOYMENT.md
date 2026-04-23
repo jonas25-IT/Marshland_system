@@ -53,8 +53,9 @@ git push
 2. Connect your GitHub repository
 3. Name: `marshland-backend`
 4. Runtime: Java
-5. Build Command: `./mvnw clean package -DskipTests`
-6. Start Command: `java -jar Marshland_system/target/Marshland_system-0.0.1-SNAPSHOT.jar`
+5. Root Directory: `backend`
+6. Build Command: `./mvnw clean package -DskipTests`
+7. Start Command: `java -jar target/marshland-0.0.1-SNAPSHOT.jar`
 7. Add Environment Variables:
    - `SPRING_DATASOURCE_URL`: Your TiDB Cloud MySQL connection string
    - `SPRING_DATASOURCE_USERNAME`: Your TiDB Cloud username
