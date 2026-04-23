@@ -312,6 +312,9 @@ const TouristDashboard = () => {
                 } else if (imageUrl.startsWith('/api/gallery/files/')) {
                   const filename = imageUrl.split('/api/gallery/files/').pop();
                   fullImageUrl = `${apiBaseUrl}/files/gallery/${encodeURIComponent(filename)}`;
+                } else if (imageUrl.startsWith('/uploads/gallery/')) {
+                  const filename = imageUrl.split('/uploads/gallery/').pop();
+                  fullImageUrl = `${apiBaseUrl}/files/gallery/${encodeURIComponent(filename)}`;
                 } else {
                   const filename = imageUrl.startsWith('/') ? imageUrl.split('/').pop() : imageUrl;
                   fullImageUrl = `${apiBaseUrl}/files/gallery/${encodeURIComponent(filename)}`;

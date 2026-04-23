@@ -33,35 +33,48 @@ public class BookingController {
     }
     
     @PostMapping("/new")
-    public Booking createBooking(@RequestBody java.util.Map<String, Object> bookingData, Authentication authentication) {
-        User currentUser = (User) authentication.getPrincipal();
+    public ResponseEntity<?> createBooking(@RequestBody java.util.Map<String, Object> bookingData, Authentication authentication) {
+        try {
+            System.out.println("Creating booking with data: " + bookingData);
+            System.out.println("Authentication: " + (authentication != null ? authentication.getName() : "null"));
+            
+            User currentUser = (User) authentication.getPrincipal();
+            System.out.println("Current user: " + currentUser.getEmail());
 
-        // Extract data from the request
-        String visitDateStr = (String) bookingData.get("visitDate");
-        Integer numberOfVisitors = ((Number) bookingData.get("numberOfVisitors")).intValue();
-        String visitType = (String) bookingData.get("visitType");
+            // Extract data from the request
+            String visitDateStr = (String) bookingData.get("visitDate");
+            Integer numberOfVisitors = ((Number) bookingData.get("numberOfVisitors")).intValue();
+            String visitType = (String) bookingData.get("visitType");
 
-        // Parse the date
-        LocalDate visitDate = LocalDate.parse(visitDateStr);
+            System.out.println("Visit date: " + visitDateStr + ", Visitors: " + numberOfVisitors + ", Type: " + visitType);
 
-        // Find or create VisitDate
-        VisitDate visitDateEntity = visitDateService.findByVisitDate(visitDate);
-        if (visitDateEntity == null) {
-            visitDateEntity = new VisitDate();
-            visitDateEntity.setVisitDate(visitDate);
-            visitDateEntity.setMaxCapacity(100); // Default capacity
-            visitDateEntity.setCurrentBookings(0);
-            visitDateEntity = visitDateService.createVisitDate(visitDateEntity);
+            // Parse the date
+            LocalDate visitDate = LocalDate.parse(visitDateStr);
+
+            // Find or create VisitDate
+            VisitDate visitDateEntity = visitDateService.findByVisitDate(visitDate);
+            if (visitDateEntity == null) {
+                visitDateEntity = new VisitDate();
+                visitDateEntity.setVisitDate(visitDate);
+                visitDateEntity.setMaxCapacity(100); // Default capacity
+                visitDateEntity.setCurrentBookings(0);
+                visitDateEntity = visitDateService.createVisitDate(visitDateEntity);
+            }
+
+            // Create booking
+            Booking booking = new Booking();
+            booking.setUser(currentUser);
+            booking.setVisitDate(visitDateEntity);
+            booking.setNumberOfVisitors(numberOfVisitors);
+            booking.setSpecialRequests(visitType); // Store visitType in specialRequests
+
+            Booking createdBooking = bookingService.createBooking(booking);
+            return ResponseEntity.ok(createdBooking);
+        } catch (Exception e) {
+            System.err.println("Error creating booking: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error creating booking: " + e.getMessage());
         }
-
-        // Create booking
-        Booking booking = new Booking();
-        booking.setUser(currentUser);
-        booking.setVisitDate(visitDateEntity);
-        booking.setNumberOfVisitors(numberOfVisitors);
-        booking.setSpecialRequests(visitType); // Store visitType in specialRequests
-
-        return bookingService.createBooking(booking);
     }
     
     @GetMapping("/my-bookings")
