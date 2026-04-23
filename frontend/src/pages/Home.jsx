@@ -18,22 +18,22 @@ const Home = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-20 flex justify-between items-center px-8 py-8 max-w-7xl mx-auto backdrop-blur-md sticky top-0 border-b border-white/5">
+      <nav className="relative z-20 flex justify-between items-center px-4 md:px-8 py-6 md:py-8 max-w-7xl mx-auto backdrop-blur-md sticky top-0 border-b border-white/5">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl shadow-lg shadow-purple-500/20">
             <Leaf className="w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold tracking-tighter text-glow">Marshland</span>
+          <span className="text-xl md:text-2xl font-bold tracking-tighter text-glow">Marshland</span>
         </div>
-        <div className="flex items-center gap-8">
-           <a href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Ecosystem</a>
-           <a href="#impact" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Impact</a>
+        <div className="flex items-center gap-4 md:gap-8">
+           <a href="#features" className="text-xs md:text-sm font-medium text-gray-400 hover:text-white transition-colors py-2 px-3 md:px-0">Ecosystem</a>
+           <a href="#impact" className="text-xs md:text-sm font-medium text-gray-400 hover:text-white transition-colors py-2 px-3 md:px-0">Impact</a>
            {user ? (
-             <Link to="/dashboard" className="btn-premium btn-premium-primary text-xs !py-2 !px-6">Open Dashboard</Link>
+             <Link to="/dashboard" className="btn-premium btn-premium-primary text-xs !py-3 !px-4 md:!py-2 md:!px-6 min-h-[44px]">Open Dashboard</Link>
            ) : (
-             <div className="flex items-center gap-4">
-                <Link to="/login" className="text-sm font-bold hover:text-purple-400 transition-colors">Sign In</Link>
-                <Link to="/register" className="btn-premium btn-premium-primary text-xs !py-2 !px-6">Get Clearance</Link>
+             <div className="flex items-center gap-2 md:gap-4">
+                <Link to="/login" className="text-xs md:text-sm font-bold hover:text-purple-400 transition-colors py-2 px-3 md:px-0 min-h-[44px]">Sign In</Link>
+                <Link to="/register" className="btn-premium btn-premium-primary text-xs !py-3 !px-4 md:!py-2 md:!px-6 min-h-[44px]">Get Clearance</Link>
              </div>
            )}
         </div>
