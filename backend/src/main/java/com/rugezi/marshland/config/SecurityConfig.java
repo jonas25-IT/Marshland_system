@@ -87,6 +87,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/files/**").permitAll()
                         .requestMatchers("/api/species/**").permitAll()
                         .requestMatchers("/api/tours/**").permitAll()
                         .requestMatchers("/api/gallery/photos").authenticated()

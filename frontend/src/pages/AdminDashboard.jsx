@@ -31,27 +31,26 @@ const AdminDashboard = () => {
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       // Replace hardcoded port 8081 with 8083 if present
       let url = imageUrl.replace(':8081', ':8083');
-      // Ensure species images have /species/ in the path for compatibility
-      if (url.includes('/uploads/') && !url.includes('/uploads/species/')) {
-        url = url.replace('/uploads/', '/uploads/species/');
+      // Use API endpoint for better URL decoding support
+      if (url.includes('/uploads/species/')) {
+        const filename = url.split('/uploads/species/').pop();
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083/api';
+        return `${apiBaseUrl}/files/species/${encodeURIComponent(filename)}`;
       }
       return url;
     }
-    // Backend serves static files at /uploads/species/**
-    // Ensure imageUrl starts with /uploads/species
-    let path = imageUrl.startsWith('/') ? imageUrl : `/uploads/species/${imageUrl}`;
-    // Handle existing records that have /uploads/ without /species/
-    if (path.startsWith('/uploads/') && !path.startsWith('/uploads/species/')) {
-      path = path.replace('/uploads/', '/uploads/species/');
+    // Extract filename and use API endpoint for proper URL decoding
+    let filename = imageUrl.startsWith('/') ? imageUrl.split('/').pop() : imageUrl;
+    // Handle existing records that have /uploads/ prefix
+    if (filename.startsWith('/uploads/')) {
+      filename = filename.split('/uploads/').pop();
     }
-    // Encode filename to handle spaces and special characters
-    const pathParts = path.split('/');
-    const filename = pathParts.pop();
-    const encodedFilename = encodeURIComponent(filename);
-    path = [...pathParts, encodedFilename].join('/');
+    if (filename.startsWith('species/')) {
+      filename = filename.split('species/').pop();
+    }
     
-    const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
-    const fullUrl = `${backendUrl}${path}`;
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083/api';
+    const fullUrl = `${apiBaseUrl}/files/species/${encodeURIComponent(filename)}`;
     console.log('Species Image URL:', fullUrl);
     return fullUrl;
   };
