@@ -39,9 +39,20 @@ const AdminDashboard = () => {
     }
     // Backend serves static files at /uploads/species/**
     // Ensure imageUrl starts with /uploads/species
-    const path = imageUrl.startsWith('/') ? imageUrl : `/uploads/species/${imageUrl}`;
+    let path = imageUrl.startsWith('/') ? imageUrl : `/uploads/species/${imageUrl}`;
+    // Handle existing records that have /uploads/ without /species/
+    if (path.startsWith('/uploads/') && !path.startsWith('/uploads/species/')) {
+      path = path.replace('/uploads/', '/uploads/species/');
+    }
+    // Encode filename to handle spaces and special characters
+    const pathParts = path.split('/');
+    const filename = pathParts.pop();
+    const encodedFilename = encodeURIComponent(filename);
+    path = [...pathParts, encodedFilename].join('/');
+    
     const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
     const fullUrl = `${backendUrl}${path}`;
+    console.log('Species Image URL:', fullUrl);
     return fullUrl;
   };
   
