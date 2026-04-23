@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -22,8 +23,13 @@ public class FileController {
             // Decode the URL-encoded filename
             String decodedFilename = java.net.URLDecoder.decode(filename, "UTF-8");
             
-            // Construct the file path
-            Path filePath = Paths.get("uploads/species").resolve(decodedFilename).normalize();
+            // Get absolute path to uploads directory
+            Path uploadDir = Paths.get("uploads/species").toAbsolutePath().normalize();
+            Path filePath = uploadDir.resolve(decodedFilename).normalize();
+            
+            System.out.println("Looking for species image: " + filePath);
+            System.out.println("File exists: " + Files.exists(filePath));
+            
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
@@ -33,11 +39,14 @@ public class FileController {
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
             } else {
+                System.out.println("File not found or not readable: " + filePath);
                 return ResponseEntity.notFound().build();
             }
         } catch (MalformedURLException e) {
+            System.err.println("Malformed URL for file: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IOException e) {
+            System.err.println("IO error serving file: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -48,8 +57,13 @@ public class FileController {
             // Decode the URL-encoded filename
             String decodedFilename = java.net.URLDecoder.decode(filename, "UTF-8");
             
-            // Construct the file path
-            Path filePath = Paths.get("uploads/gallery").resolve(decodedFilename).normalize();
+            // Get absolute path to uploads directory
+            Path uploadDir = Paths.get("uploads/gallery").toAbsolutePath().normalize();
+            Path filePath = uploadDir.resolve(decodedFilename).normalize();
+            
+            System.out.println("Looking for gallery image: " + filePath);
+            System.out.println("File exists: " + Files.exists(filePath));
+            
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
@@ -59,11 +73,14 @@ public class FileController {
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
             } else {
+                System.out.println("File not found or not readable: " + filePath);
                 return ResponseEntity.notFound().build();
             }
         } catch (MalformedURLException e) {
+            System.err.println("Malformed URL for file: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IOException e) {
+            System.err.println("IO error serving file: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
