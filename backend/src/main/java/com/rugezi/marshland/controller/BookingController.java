@@ -6,6 +6,7 @@ import com.rugezi.marshland.entity.VisitDate;
 import com.rugezi.marshland.service.BookingService;
 import com.rugezi.marshland.service.UserService;
 import com.rugezi.marshland.service.VisitDateService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
