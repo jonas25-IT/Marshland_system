@@ -30,8 +30,8 @@ const AdminDashboard = () => {
       // Replace hardcoded port 8081 with 8083 if present
       return imageUrl.replace(':8081', ':8083');
     }
-    // Backend serves static files at http://localhost:8083/uploads/**
-    return `http://localhost:8083${imageUrl}`;
+    const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
+    return `${backendUrl}${imageUrl}`;
   };
   
   const [users, setUsers] = useState([]);

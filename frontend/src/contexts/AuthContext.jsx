@@ -3,8 +3,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getRoleDashboardPath } from '../utils/permissions';
 
-// API configuration
-const API_BASE_URL = 'http://localhost:8083/api';
+export const BACKEND_URL = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') : 'http://localhost:8083';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083/api';
 
 // Create axios instance
 const api = axios.create({

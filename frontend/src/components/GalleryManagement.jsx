@@ -118,7 +118,8 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
         const uploadResult = await handleFileUpload(file);
         console.log('Upload result:', uploadResult);
         if (uploadResult) {
-          imageUrl = 'http://localhost:8083' + uploadResult.imageUrl;
+          const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
+          imageUrl = backendUrl + uploadResult.imageUrl;
           metaData = {
             fileName: uploadResult.fileName,
             contentType: uploadResult.contentType,

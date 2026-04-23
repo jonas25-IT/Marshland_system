@@ -282,12 +282,13 @@ const TouristDashboard = () => {
               const imageUrl = p?.image_url || p?.imageUrl;
               let fullImageUrl;
               if (imageUrl) {
+                const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
                 if (imageUrl.startsWith('http')) {
                   fullImageUrl = imageUrl;
                 } else if (imageUrl.startsWith('/api/gallery/files/')) {
-                  fullImageUrl = `http://localhost:8083${imageUrl}`;
+                  fullImageUrl = `${backendUrl}${imageUrl}`;
                 } else {
-                  fullImageUrl = `http://localhost:8083${imageUrl}`;
+                  fullImageUrl = `${backendUrl}${imageUrl}`;
                 }
               } else {
                 fullImageUrl = `https://source.unsplash.com/400x400/?marsh,nature,wildlife,${i}`;

@@ -52,7 +52,8 @@ const EcologistDashboardEnhanced = () => {
     // Backend serves static files at http://localhost:8083/uploads/species/**
     // Ensure imageUrl starts with /uploads/species
     const path = imageUrl.startsWith('/') ? imageUrl : `/uploads/species/${imageUrl}`;
-    const fullUrl = `http://localhost:8083${path}`;
+    const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
+    const fullUrl = `${backendUrl}${path}`;
     console.log('Image URL (Local):', fullUrl);
     return fullUrl;
   };
