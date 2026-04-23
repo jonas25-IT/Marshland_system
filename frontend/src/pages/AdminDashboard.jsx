@@ -14,6 +14,7 @@ import GalleryManagement from '../components/GalleryManagement';
 import FeedbackList from '../components/FeedbackList';
 import Settings from '../components/Settings';
 import Profile from '../components/Profile';
+import SystemActivityMonitor from '../components/SystemActivityMonitor';
 
 const AdminDashboard = () => {
   const { user, isAuthenticated, logout, api } = useAuth();
@@ -1045,6 +1046,21 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* System Activity Monitoring */}
+        {activeTab === 'monitoring' && (
+          <div className="glass-card-premium overflow-hidden">
+            <div className="p-8 border-b border-white/5">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight mb-1">System Activity Monitor</h2>
+                <p className="text-xs text-gray-500 italic">Track all system activities including logins, bookings, and changes</p>
+              </div>
+            </div>
+            <div className="p-8">
+              <SystemActivityMonitor />
             </div>
           </div>
         )}

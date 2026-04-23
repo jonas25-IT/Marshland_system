@@ -4,8 +4,8 @@ services:
     name: marshland-backend
     runtime: java
     plan: free
-    buildCommand: ./mvnw clean package -DskipTests
-    startCommand: java -jar Marshland_system/target/Marshland_system-0.0.1-SNAPSHOT.jar
+    buildCommand: cd Marshland_system/Marshland_system && ./mvnw clean package -DskipTests
+    startCommand: java -jar Marshland_system/Marshland_system/target/Marshland_system-0.0.1-SNAPSHOT.jar
     envVars:
       - key: SPRING_DATASOURCE_URL
         value: ${SPRING_DATASOURCE_URL}

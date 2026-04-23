@@ -22,11 +22,13 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final VisitDateRepository visitDateRepository;
     private final UserRepository userRepository;
+    private final SystemActivityService systemActivityService;
     
-    public BookingService(BookingRepository bookingRepository, VisitDateRepository visitDateRepository, UserRepository userRepository) {
+    public BookingService(BookingRepository bookingRepository, VisitDateRepository visitDateRepository, UserRepository userRepository, SystemActivityService systemActivityService) {
         this.bookingRepository = bookingRepository;
         this.visitDateRepository = visitDateRepository;
         this.userRepository = userRepository;
+        this.systemActivityService = systemActivityService;
     }
     
     public Booking createBooking(Booking booking) {
@@ -63,6 +65,16 @@ public class BookingService {
             Booking savedBooking = bookingRepository.findById(bookingId).get();
             System.out.println(">>> Booking approved successfully");
 
+            // Track booking approval
+            systemActivityService.trackBookingDecision(
+                savedBooking.getBookingId().toString(),
+                "Booking #" + savedBooking.getBookingId(),
+                admin.getEmail(),
+                admin.getRole().toString(),
+                "APPROVE",
+                "Booking approved by admin"
+            );
+
             return savedBooking;
         } catch (Exception e) {
             System.err.println(">>> Error in approveBooking: " + e.getMessage());
@@ -80,8 +92,19 @@ public class BookingService {
         }
         
         booking.reject(admin);
+        Booking savedBooking = bookingRepository.save(booking);
         
-        return bookingRepository.save(booking);
+        // Track booking rejection
+        systemActivityService.trackBookingDecision(
+            savedBooking.getBookingId().toString(),
+            "Booking #" + savedBooking.getBookingId(),
+            admin.getEmail(),
+            admin.getRole().toString(),
+            "REJECT",
+            "Booking rejected by admin"
+        );
+        
+        return savedBooking;
     }
     
     public Optional<Booking> findById(Long id) {

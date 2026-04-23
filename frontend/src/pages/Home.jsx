@@ -101,7 +101,7 @@ const Home = () => {
                <h3 className="text-5xl font-black tracking-tight text-glow">Earth's Kidneys</h3>
                <p className="text-xl text-gray-400 font-light leading-relaxed">
                  Commonly referred to as the <span className="text-white font-medium">"Earth Kidneys"</span>, the marsh functions as a regulating basin. 
-                 It moderates inflows and outflows, filtering water resources that flow into the downstream lakes of Bulera and Ruhondo.
+                 It moderates inflows and outflows, filtering water resources that flow into the downstream lakes of Burera and Ruhondo.
                </p>
                <div className="grid grid-cols-2 gap-4">
                   <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">

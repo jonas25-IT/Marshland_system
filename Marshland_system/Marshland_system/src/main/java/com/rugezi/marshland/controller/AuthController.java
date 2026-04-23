@@ -6,6 +6,7 @@ import com.rugezi.marshland.entity.User;
 import com.rugezi.marshland.entity.UserRole;
 import com.rugezi.marshland.security.JwtUtils;
 import com.rugezi.marshland.service.UserService;
+import com.rugezi.marshland.service.SystemActivityService;
 import com.rugezi.marshland.validator.PasswordValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,11 +28,13 @@ public class AuthController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    private final SystemActivityService systemActivityService;
     
-    public AuthController(UserService userService, AuthenticationManager authenticationManager, JwtUtils jwtUtils) {
+    public AuthController(UserService userService, AuthenticationManager authenticationManager, JwtUtils jwtUtils, SystemActivityService systemActivityService) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
+        this.systemActivityService = systemActivityService;
     }
     
     @PostMapping("/register")
@@ -54,7 +58,7 @@ public class AuthController {
     }
     
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
@@ -67,11 +71,19 @@ public class AuthController {
                     .map(GrantedAuthority::getAuthority)
                     .collect(Collectors.toList());
 
+            // Track successful login
+            systemActivityService.trackLogin(userDetails.getEmail(), roles.get(0), request, true);
+
             return ResponseEntity.ok(new JwtResponse(jwt, 
                                      userDetails.getUserId(), 
                                      userDetails.getEmail(), 
                                      roles));
         } catch (org.springframework.security.core.AuthenticationException e) {
+            // Track failed login
+            User user = userService.findByEmail(loginRequest.getEmail()).orElse(null);
+            String userRole = user != null ? user.getRole().toString() : "UNKNOWN";
+            systemActivityService.trackLogin(loginRequest.getEmail(), userRole, request, false);
+            
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
     }

@@ -89,3 +89,7 @@ Desktop.ini
 # Run scripts (keep for local development)
 run-app.bat
 INTELLIJ-MAVEN-FIX.md
+/uploads/
+/Marshland_system/Marshland_system/uploads/
+node_modules/
+.env
