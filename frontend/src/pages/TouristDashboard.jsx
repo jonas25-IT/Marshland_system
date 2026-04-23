@@ -227,17 +227,41 @@ const TouristDashboard = () => {
                     <Bird className="w-5 h-5 text-emerald-400" /> Marshland Watch
                   </h3>
                   <div className="space-y-6">
-                    {species.slice(0, 3).map((s, i) => (
-                      <div key={i} className="flex items-center gap-4 group cursor-pointer">
-                         <div className="w-14 h-14 rounded-xl bg-white/5 overflow-hidden">
-                            <img src={s.imageUrl || `https://source.unsplash.com/100x100/?nature,${s.commonName}`} className="w-full h-full object-cover group-hover:scale-110 transition-all" alt="" />
-                         </div>
-                         <div>
-                            <p className="font-bold text-sm">{s.commonName}</p>
-                            <span className="text-[10px] text-pink-400 font-bold uppercase tracking-widest">{s.conservationStatus}</span>
-                         </div>
-                      </div>
-                    ))}
+                    {species.slice(0, 3).map((s, i) => {
+                      const getImageUrl = (imageUrl, fallbackKeyword = 'nature') => {
+                        if (!imageUrl) {
+                          return `https://source.unsplash.com/100x100/?${fallbackKeyword}`;
+                        }
+                        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                          if (imageUrl.includes('/uploads/species/')) {
+                            const filename = imageUrl.split('/uploads/species/').pop();
+                            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083/api';
+                            return `${apiBaseUrl}/files/species/${encodeURIComponent(filename)}`;
+                          }
+                          return imageUrl;
+                        }
+                        let filename = imageUrl.startsWith('/') ? imageUrl.split('/').pop() : imageUrl;
+                        if (filename.startsWith('/uploads/')) {
+                          filename = filename.split('/uploads/').pop();
+                        }
+                        if (filename.startsWith('species/')) {
+                          filename = filename.split('species/').pop();
+                        }
+                        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083/api';
+                        return `${apiBaseUrl}/files/species/${encodeURIComponent(filename)}`;
+                      };
+                      return (
+                        <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                           <div className="w-14 h-14 rounded-xl bg-white/5 overflow-hidden">
+                              <img src={getImageUrl(s.imageUrl, s.commonName)} className="w-full h-full object-cover group-hover:scale-110 transition-all" alt="" />
+                           </div>
+                           <div>
+                              <p className="font-bold text-sm">{s.commonName}</p>
+                              <span className="text-[10px] text-pink-400 font-bold uppercase tracking-widest">{s.conservationStatus}</span>
+                           </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   <button onClick={() => setActiveTab('gallery')} className="w-full mt-8 py-3 bg-white/5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Explore Wiki</button>
                 </div>
@@ -282,13 +306,15 @@ const TouristDashboard = () => {
               const imageUrl = p?.image_url || p?.imageUrl;
               let fullImageUrl;
               if (imageUrl) {
-                const backendUrl = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api', '') : 'http://localhost:8083';
+                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8083/api';
                 if (imageUrl.startsWith('http')) {
                   fullImageUrl = imageUrl;
                 } else if (imageUrl.startsWith('/api/gallery/files/')) {
-                  fullImageUrl = `${backendUrl}${imageUrl}`;
+                  const filename = imageUrl.split('/api/gallery/files/').pop();
+                  fullImageUrl = `${apiBaseUrl}/files/gallery/${encodeURIComponent(filename)}`;
                 } else {
-                  fullImageUrl = `${backendUrl}${imageUrl}`;
+                  const filename = imageUrl.startsWith('/') ? imageUrl.split('/').pop() : imageUrl;
+                  fullImageUrl = `${apiBaseUrl}/files/gallery/${encodeURIComponent(filename)}`;
                 }
               } else {
                 fullImageUrl = `https://source.unsplash.com/400x400/?marsh,nature,wildlife,${i}`;
