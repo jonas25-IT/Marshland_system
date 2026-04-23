@@ -8,10 +8,10 @@ const Logo = ({
   animated = false 
 }) => {
   const sizeClasses = {
-    small: 'h-6 w-6',
-    medium: 'h-8 w-8',
-    large: 'h-12 w-12',
-    xlarge: 'h-16 w-16'
+    small: 'h-8',
+    medium: 'h-12',
+    large: 'h-16',
+    xlarge: 'h-20'
   };
 
   const textSizes = {
@@ -42,7 +42,7 @@ const Logo = ({
     ${baseClasses}
   `;
 
-  // Custom SVG Leaf Icon
+  // SVG Leaf Icon
   const LeafIcon = ({ className }) => (
     <svg 
       className={className} 
@@ -71,16 +71,9 @@ const Logo = ({
     return (
       <div className={`flex items-center ${logoClasses}`}>
         <div className="relative">
-          {/* Outer ring */}
-          <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full blur-sm opacity-75"></div>
-          
-          {/* Main icon */}
           <div className="relative bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-1.5">
             <LeafIcon className="w-full h-full text-white" />
           </div>
-          
-          {/* Inner highlight */}
-          <div className="absolute top-1 left-1 w-2 h-2 bg-white rounded-full opacity-60"></div>
         </div>
       </div>
     );
@@ -90,22 +83,12 @@ const Logo = ({
     <div className={`flex items-center ${baseClasses} ${className}`}>
       {/* Logo Icon */}
       <div className={`relative ${logoClasses}`}>
-        {/* Outer glow effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full blur-md opacity-60"></div>
-        
-        {/* Main logo circle */}
         <div className="relative bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 rounded-full p-2 shadow-lg">
-          {/* Custom Leaf SVG */}
           <LeafIcon className="w-full h-full text-white drop-shadow-sm" />
-          
-          {/* Inner highlight for depth */}
           <div className="absolute top-1.5 left-1.5 w-2 h-2 bg-white rounded-full opacity-40"></div>
-          
-          {/* Subtle inner shadow */}
           <div className="absolute inset-0 rounded-full shadow-inner"></div>
         </div>
-        
-        {/* Animated ring */}
         {animated && (
           <div className="absolute inset-0 rounded-full border-2 border-green-300 opacity-30 animate-ping"></div>
         )}
@@ -114,7 +97,7 @@ const Logo = ({
       {/* Logo Text */}
       {showText && (
         <div className="ml-3 flex flex-col">
-          <h1 className={`${textClasses} leading-tight`}>
+          <h1 className={textClasses}>
             Rugezi
           </h1>
           <span className="text-sm font-medium text-gray-600 leading-tight">

@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
+import Footer from './components/Footer';
 
 // Pages
 import Home from './pages/Home';
@@ -34,7 +35,7 @@ function App() {
     <AuthProvider>
       <SettingsProvider>
         <Router>
-          <div className="App">
+          <div className="App min-h-screen flex flex-col">
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
@@ -81,6 +82,9 @@ function App() {
               },
             }}
           />
+          
+          {/* Footer */}
+          <Footer />
         </div>
         </Router>
       </SettingsProvider>
