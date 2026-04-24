@@ -182,18 +182,18 @@ const TouristDashboard = () => {
         {activeTab === 'dashboard' && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard title="My Visits" value={dashboardData?.totalBookings} change="History" icon={Calendar} color="text-purple-400" />
-              <StatCard title="Upcoming" value={dashboardData?.upcomingBookings} change="Next Month" icon={Clock} color="text-blue-400" />
-              <StatCard title="Eco Points" value={1250} change="+250" icon={Star} color="text-emerald-400" />
-              <StatCard title="Saved" value={5} change="Locations" icon={Heart} color="text-pink-400" />
+              <StatCard title={t.myVisits} value={dashboardData?.totalBookings} change={t.history} icon={Calendar} color="text-purple-400" />
+              <StatCard title={t.upcoming} value={dashboardData?.upcomingBookings} change={t.nextMonth} icon={Clock} color="text-blue-400" />
+              <StatCard title={t.ecoPoints} value={1250} change="+250" icon={Star} color="text-emerald-400" />
+              <StatCard title={t.saved} value={5} change={t.locations} icon={Heart} color="text-pink-400" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-12">
                {/* My Bookings List */}
               <div className="lg:col-span-2 glass-card-premium p-8">
                 <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-xl font-bold">My Reservations</h3>
-                  <button onClick={() => setShowBookingModal(true)} className="btn-premium btn-premium-primary text-xs !py-2">Book New Visit</button>
+                  <h3 className="text-xl font-bold">{t.myReservations}</h3>
+                  <button onClick={() => setShowBookingModal(true)} className="btn-premium btn-premium-primary text-xs !py-2">{t.bookNewVisit}</button>
                 </div>
                 <div className="space-y-4">
                   {(dashboardData?.bookings || []).map((b) => (
@@ -204,7 +204,7 @@ const TouristDashboard = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-200">{new Date(b.visitDate).toLocaleDateString()}</p>
-                          <p className="text-xs text-gray-500">{b.visitType} • {b.numberOfVisitors} Visitors</p>
+                          <p className="text-xs text-gray-500">{b.visitType} • {b.numberOfVisitors} {t.visitors}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -225,7 +225,7 @@ const TouristDashboard = () => {
               <div className="space-y-8">
                 <div className="glass-card-premium p-8 h-full">
                   <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <Bird className="w-5 h-5 text-emerald-400" /> Marshland Watch
+                    <Bird className="w-5 h-5 text-emerald-400" /> {t.marshlandWatch}
                   </h3>
                   <div className="space-y-6">
                     {species.slice(0, 3).map((s, i) => {
@@ -264,7 +264,7 @@ const TouristDashboard = () => {
                       );
                     })}
                   </div>
-                  <button onClick={() => setActiveTab('gallery')} className="w-full mt-8 py-3 bg-white/5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all">Explore Wiki</button>
+                  <button onClick={() => setActiveTab('gallery')} className="w-full mt-8 py-3 bg-white/5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all">{t.exploreWiki}</button>
                 </div>
               </div>
             </div>
@@ -332,9 +332,9 @@ const TouristDashboard = () => {
                     onError={(e) => { e.target.src = `https://source.unsplash.com/400x400/?marsh,nature,wildlife,${i}`; }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
-                    <p className="text-xs font-bold text-white uppercase tracking-wider">{p?.title || "Scientific Capture"}</p>
-                    <p className="text-[10px] text-purple-400 font-medium">{p?.category || "Field Observation"}</p>
-                    <p className="text-[10px] text-gray-300 font-light line-clamp-2 mt-1">{p?.description || "Captured in the marshland ecosystem"}</p>
+                    <p className="text-xs font-bold text-white uppercase tracking-wider">{p?.title || t.scientificCapture}</p>
+                    <p className="text-[10px] text-purple-400 font-medium">{p?.category || t.fieldObservation}</p>
+                    <p className="text-[10px] text-gray-300 font-light line-clamp-2 mt-1">{p?.description || t.capturedInMarshland}</p>
                   </div>
                 </div>
               );
@@ -347,7 +347,7 @@ const TouristDashboard = () => {
             <div className="glass-card-premium p-8">
               <h2 className="text-2xl font-bold mb-8 flex items-center gap-3">
                 <Calendar className="w-6 h-6 text-purple-400" />
-                My Bookings
+                {t.myBookings}
               </h2>
               <div className="space-y-4">
                 {(dashboardData?.bookings || []).map((b) => {
@@ -362,7 +362,7 @@ const TouristDashboard = () => {
                           </div>
                           <div>
                             <p className="font-bold text-lg text-gray-200">{new Date(visitDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                            <p className="text-sm text-gray-500">{visitType} • {b.numberOfVisitors} Visitors</p>
+                            <p className="text-sm text-gray-500">{visitType} • {b.numberOfVisitors} {t.visitors}</p>
                           </div>
                         </div>
                         <span className={`px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wider ${
