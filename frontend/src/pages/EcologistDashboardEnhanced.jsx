@@ -475,9 +475,9 @@ const EcologistDashboardEnhanced = () => {
         )}
 
         {activeTab === 'gallery' && (
-          <div className="p-8">
-            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Marshland Fragment Sync</h1>
-            <p className="text-gray-500 font-light italic mb-10">Manage visual captures synchronized with the global database.</p>
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Gallery Management</h1>
+            <p className="text-gray-500 font-light italic mb-10">Manage and organize visual captures from the marshland ecosystem.</p>
             <GalleryManagement />
           </div>
         )}

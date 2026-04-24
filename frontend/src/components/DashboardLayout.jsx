@@ -85,6 +85,7 @@ const DashboardLayout = ({ children, activeTab, onTabChange }) => {
       { id: 'analytics', label: 'Analytics', icon: BarChart3 },
       { id: 'census', label: 'Census Data', icon: Activity },
       { id: 'mapping', label: 'Mapping', icon: Globe },
+      { id: 'gallery', label: 'Gallery', icon: Camera },
     ],
     TOURIST: [
       { id: 'dashboard', label: t.dashboard, icon: HomeIcon },
