@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
+import DashboardLayout, { StatCard, ActivityItem } from '../components/DashboardLayout';
 import { 
   Leaf, Home, LogOut, Plus, Upload, FileText, 
   Eye, Edit, Trash2, BarChart3, Activity, 
@@ -20,6 +22,7 @@ import NotificationsList from '../components/NotificationsList';
 
 const EcologistDashboardEnhanced = () => {
   const { user, logout, api } = useAuth();
+  const { t } = useSettings();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [species, setSpecies] = useState([]);
@@ -229,115 +232,316 @@ const EcologistDashboardEnhanced = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0E14] text-gray-100 flex dashboard-bg font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 sidebar-gradient flex flex-col fixed h-screen z-20">
-        <div className="p-8 flex items-center gap-3">
-          <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl shadow-lg shadow-purple-500/20">
-            <Leaf className="w-6 h-6 text-white" />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-glow">Marshland</span>
-        </div>
-
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full sidebar-item ${activeTab === 'dashboard' ? 'sidebar-item-active' : ''}`}
-          >
-            <Home className="w-5 h-5" /> Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('species')}
-            className={`w-full sidebar-item ${activeTab === 'species' ? 'sidebar-item-active' : ''}`}
-          >
-            <Database className="w-5 h-5" /> Species
-          </button>
-          <button 
-            onClick={() => setActiveTab('gallery')}
-            className={`w-full sidebar-item ${activeTab === 'gallery' ? 'sidebar-item-active' : ''}`}
-          >
-            <ImageIcon className="w-5 h-5" /> Gallery
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`w-full sidebar-item ${activeTab === 'analytics' ? 'sidebar-item-active' : ''}`}
-          >
-            <BarChart3 className="w-5 h-5" /> Analytics
-          </button>
-          <button
-            onClick={() => setActiveTab('census')}
-            className={`w-full sidebar-item ${activeTab === 'census' ? 'sidebar-item-active' : ''}`}
-          >
-            <Activity className="w-5 h-5" /> Census Data
-          </button>
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`w-full sidebar-item ${activeTab === 'map' ? 'sidebar-item-active' : ''}`}
-          >
-            <Globe className="w-5 h-5" /> Mapping
-          </button>
-          
-          <div className="pt-8 pb-4 text-xs font-semibold text-gray-500 uppercase px-4">System</div>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`w-full sidebar-item ${activeTab === 'notifications' ? 'sidebar-item-active' : ''}`}
-          >
-            <Bell className="w-5 h-5" /> Notifications
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`w-full sidebar-item ${activeTab === 'settings' ? 'sidebar-item-active' : ''}`}
-          >
-            <SettingsIcon className="w-5 h-5" /> Settings
-          </button>
-        </nav>
-
-        <div className="p-4 border-t border-white/5">
-          <button 
-            onClick={handleLogout}
-            className="w-full sidebar-item text-red-400 hover:bg-red-500/10 hover:text-red-300"
-          >
-            <LogOut className="w-5 h-5" /> Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 ml-64 p-8 min-h-screen">
-        {/* Top Header */}
-        <header className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-3xl font-bold mb-1">Ecologist Console</h1>
-            <p className="text-gray-400">Welcome back, {user?.firstName}. System status: <span className="text-emerald-400 font-medium">Optimal</span></p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input 
-                type="text" 
-                placeholder="Universal Search..."
-                className="bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 w-64 focus:outline-none focus:border-purple-500/50 transition-all font-light"
-              />
+    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <div className="space-y-10 animate-in fade-in duration-500">
+        {activeTab === 'dashboard' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { title: 'Total Species', value: dashboardData.stats.totalSpecies || 0, change: '+12%', icon: Globe, color: 'text-blue-400' },
+                { title: 'Endangered', value: (dashboardData.stats.speciesByConservationStatus?.endangered || []).length, change: '-2%', icon: AlertTriangle, color: 'text-orange-400' },
+                { title: 'Habitats', value: Object.keys(dashboardData.stats.speciesByHabitat || {}).length, change: '+5%', icon: MapPin, color: 'text-emerald-400' },
+                { title: 'Conservation Score', value: '87.5%', change: '+5.2%', icon: TrendingUp, color: 'text-purple-400' }
+              ].map((stat, i) => (
+                <StatCard key={i} title={stat.title} value={stat.value} change={stat.change} icon={stat.icon} color={stat.color} />
+              ))}
             </div>
-            <div className="relative group">
-              <button
-                onClick={() => {
-                  setShowNotifications(!showNotifications);
-                  if (showNotifications) loadNotifications();
-                }}
-                className="bg-white/5 border border-white/10 p-2 rounded-xl cursor-pointer hover:bg-white/10 relative"
-              >
-                <Bell className="w-5 h-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-white/5">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
+
+            {/* Middle Section: Active Research & Progress */}
+            <div className="flex justify-between items-center mt-12 mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Database className="w-5 h-5 text-purple-500" /> Priority Species Watch
+              </h2>
+              <button onClick={() => setIsSpeciesModalOpen(true)} className="text-purple-400 hover:text-purple-300 text-sm flex items-center gap-1 group">
+                View All <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-              {showNotifications && (
-                <div className="absolute top-full right-0 mt-2 w-80 glass-card-premium border border-white/10 shadow-2xl z-50 max-h-96 overflow-y-auto">
-                  <div className="p-4 border-b border-white/5 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-200">Notifications</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {species.slice(0, 4).map((s) => (
+                <div key={s.speciesId} className="glass-card-premium overflow-hidden group">
+                  <div className="h-40 relative overflow-hidden">
+                    <img
+                      src={getImageUrl(s.imageUrl, s.commonName)}
+                      alt={s.commonName}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      onError={(e) => {
+                        e.target.src = `https://source.unsplash.com/400x300/?nature,${s.commonName}`;
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1A1C26] to-transparent opacity-60"></div>
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <span className="px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[10px] font-bold uppercase tracking-wider text-white">
+                        {s.type}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-3 left-3">
+                      <h4 className="font-bold text-lg leading-tight">{s.commonName}</h4>
+                      <p className="text-xs text-gray-300 italic opacity-80">{s.scientificName}</p>
+                    </div>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {s.habitat}</span>
+                      <span className={`font-bold ${s.conservationStatus === 'Endangered' ? 'text-pink-400' : 'text-emerald-400'}`}>
+                        {s.conservationStatus}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+                        <span>Research Progress</span>
+                        <span>{Math.floor(Math.random() * 40 + 60)}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full progress-gradient rounded-full" 
+                          style={{ width: `${Math.floor(Math.random() * 40 + 60)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button onClick={() => openEditModal(s)} className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+                        <Edit className="w-3 h-3" /> Edit
+                      </button>
+                      <button onClick={() => handleDelete(s.speciesId)} className="p-2 bg-white/5 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* Add New Card */}
+              <button 
+                onClick={() => { setEditingSpecies(null); setIsSpeciesModalOpen(true); }}
+                className="glass-card-premium border-dashed border-white/10 flex flex-col items-center justify-center gap-4 text-gray-400 hover:text-purple-400 group h-[360px]"
+              >
+                <Plus className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
+                <span className="text-lg font-semibold">Add New Species Record</span>
+                <p className="text-sm text-gray-500">Contribute to ecological database</p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Ecological Analytics</h1>
+            <p className="text-gray-500 font-light italic mb-10">Comprehensive analysis of marshland ecosystem data and trends.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[
+                { title: 'Total Species', value: dashboardData.stats.totalSpecies || 0, change: '+12%', icon: Globe, color: 'text-blue-400' },
+                { title: 'Endangered', value: (dashboardData.stats.speciesByConservationStatus?.endangered || []).length, change: '-2%', icon: AlertTriangle, color: 'text-orange-400' },
+                { title: 'Habitats', value: Object.keys(dashboardData.stats.speciesByHabitat || {}).length, change: '+5%', icon: MapPin, color: 'text-emerald-400' },
+                { title: 'Conservation Score', value: '87.5%', change: '+5.2%', icon: TrendingUp, color: 'text-purple-400' }
+              ].map((stat, i) => (
+                <StatCard key={i} title={stat.title} value={stat.value} change={stat.change} icon={stat.icon} color={stat.color} />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-purple-500" /> Recent Activity
+                </h3>
+                <div className="space-y-4">
+                  {dashboardData.activities?.slice(0, 5).map((activity, i) => (
+                    <ActivityItem key={i} activity={activity} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-500" /> Conservation Status
+                </h3>
+                <div className="space-y-4">
+                  {Object.entries(dashboardData.stats.speciesByConservationStatus || {}).map(([status, speciesList]) => (
+                    <div key={status} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                      <div>
+                        <h4 className="font-bold text-lg capitalize">{status}</h4>
+                        <p className="text-sm text-gray-500">{speciesList.length} species</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center">
+                          <div className={`w-3 h-3 rounded-full ${status === 'Endangered' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${
+                                status === 'Endangered' ? 'bg-red-500' : 'bg-emerald-500'
+                              }`} 
+                              style={{ width: `${(speciesList.length / dashboardData.stats.totalSpecies) * 100}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-gray-500 text-center mt-1">
+                            {Math.round((speciesList.length / dashboardData.stats.totalSpecies) * 100)}% of total
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'species' && (
+          <div className="animate-in slide-in-from-bottom-4 duration-500">
+             <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold">Species Inventory</h2>
+              <button 
+                onClick={() => { setEditingSpecies(null); setIsSpeciesModalOpen(true); }}
+                className="btn-premium btn-premium-primary"
+              >
+                <Plus className="w-4 h-4" /> Add New Species
+              </button>
+            </div>
+            
+            <div className="glass-card-premium overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-white/[0.02]">
+                      <th className="p-6 text-xs font-bold uppercase tracking-wider text-gray-500">Common Name</th>
+                      <th className="p-6 text-xs font-bold uppercase tracking-wider text-gray-500">Scientific Name</th>
+                      <th className="p-6 text-xs font-bold uppercase tracking-wider text-gray-500">Type</th>
+                      <th className="p-6 text-xs font-bold uppercase tracking-wider text-gray-500">Conservation</th>
+                      <th className="p-6 text-xs font-bold uppercase tracking-wider text-gray-500">Habitat</th>
+                      <th className="p-6 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {species.map((s) => (
+                      <tr key={s.speciesId} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                              <img
+                                src={getImageUrl(s.imageUrl, s.commonName)}
+                                alt={s.commonName}
+                                className="w-8 h-8 object-cover rounded"
+                                onError={(e) => {
+                                  e.target.src = `https://source.unsplash.com/100x100/?nature,${s.commonName}`;
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-200">{s.commonName}</p>
+                              <p className="text-xs text-gray-500 italic">{s.scientificName}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            s.conservationStatus === 'Endangered' ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'
+                          }`}>
+                            {s.conservationStatus}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {s.habitat}</span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex gap-2">
+                            <button onClick={() => openEditModal(s)} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-semibold transition-colors">
+                              <Edit className="w-3 h-3" /> Edit
+                            </button>
+                            <button onClick={() => handleDelete(s.speciesId)} className="p-2 bg-white/5 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'notifications' && <NotificationsList />}
+        {activeTab === 'profile' && <Profile />}
+        {activeTab === 'gallery' && (
+          <div className="p-8">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Marshland Fragment Sync</h1>
+            <p className="text-gray-500 font-light italic mb-10">Manage visual captures synchronized with the global database.</p>
+            <GalleryManagement />
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Ecological Analytics</h1>
+            <p className="text-gray-500 font-light italic mb-10">Comprehensive analysis of marshland ecosystem data and trends.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[
+                { title: 'Total Species', value: dashboardData.stats.totalSpecies || 0, change: '+12%', icon: Globe, color: 'text-blue-400' },
+                { title: 'Endangered', value: (dashboardData.stats.speciesByConservationStatus?.endangered || []).length, change: '-2%', icon: AlertTriangle, color: 'text-orange-400' },
+                { title: 'Habitats', value: Object.keys(dashboardData.stats.speciesByHabitat || {}).length, change: '+5%', icon: MapPin, color: 'text-emerald-400' },
+                { title: 'Conservation Score', value: '87.5%', change: '+5.2%', icon: TrendingUp, color: 'text-purple-400' }
+              ].map((stat, i) => (
+                <StatCard key={i} title={stat.title} value={stat.value} change={stat.change} icon={stat.icon} color={stat.color} />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-purple-500" /> Recent Activity
+                </h3>
+                <div className="space-y-4">
+                  {dashboardData.activities?.slice(0, 5).map((activity, i) => (
+                    <ActivityItem key={i} activity={activity} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-500" /> Conservation Status
+                </h3>
+                <div className="space-y-4">
+                  {Object.entries(dashboardData.stats.speciesByConservationStatus || {}).map(([status, speciesList]) => (
+                    <div key={status} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                      <div>
+                        <h4 className="font-bold text-lg capitalize">{status}</h4>
+                        <p className="text-sm text-gray-500">{speciesList.length} species</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center">
+                          <div className={`w-3 h-3 rounded-full ${status === 'Endangered' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${
+                                status === 'Endangered' ? 'bg-red-500' : 'bg-emerald-500'
+                              }`} 
+                              style={{ width: `${(speciesList.length / dashboardData.stats.totalSpecies) * 100}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-gray-500 text-center mt-1">
+                            {Math.round((speciesList.length / dashboardData.stats.totalSpecies) * 100)}% of total
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+};
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllAsRead}
