@@ -6,6 +6,10 @@ services:
     plan: free
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
+    disk:
+      name: uploads
+      mountPath: /app/uploads
+      sizeGB: 1
     envVars:
       - key: SPRING_DATASOURCE_URL
         value: ${SPRING_DATASOURCE_URL}
