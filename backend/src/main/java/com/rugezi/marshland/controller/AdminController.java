@@ -236,6 +236,41 @@ public class AdminController {
         }
     }
     
+    @GetMapping("/bookings/{bookingId}/debug")
+    public ResponseEntity<?> debugBooking(@PathVariable Long bookingId, Authentication authentication) {
+        try {
+            System.out.println(">>> DEBUG REQUEST: bookingId=" + bookingId + ", user=" + authentication.getName());
+            
+            Map<String, Object> debugInfo = new HashMap<>();
+            
+            // Check if booking exists
+            try {
+                Booking booking = bookingService.findById(bookingId);
+                debugInfo.put("exists", true);
+                debugInfo.put("bookingId", booking.getBookingId());
+                debugInfo.put("status", booking.getBookingStatus().toString());
+                debugInfo.put("userEmail", booking.getUser().getEmail());
+                debugInfo.put("visitDate", booking.getVisitDate().getVisitDate().toString());
+                debugInfo.put("numberOfVisitors", booking.getNumberOfVisitors());
+                debugInfo.put("createdAt", booking.getCreatedAt().toString());
+                debugInfo.put("approvedBy", booking.getApprovedBy() != null ? booking.getApprovedBy().getEmail() : null);
+                debugInfo.put("approvalDate", booking.getApprovalDate() != null ? booking.getApprovalDate().toString() : null);
+            } catch (Exception e) {
+                debugInfo.put("exists", false);
+                debugInfo.put("error", e.getMessage());
+            }
+            
+            // Check all pending bookings
+            List<Booking> pendingBookings = bookingService.getPendingBookings();
+            debugInfo.put("totalPendingBookings", pendingBookings.size());
+            debugInfo.put("pendingBookingIds", pendingBookings.stream().map(b -> b.getBookingId()).toList());
+            
+            return ResponseEntity.ok(debugInfo);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     @PostMapping("/bookings/{bookingId}/reject")
     public ResponseEntity<?> rejectBooking(@PathVariable Long bookingId, @RequestBody Map<String, String> request, 
                                          Authentication authentication) {
