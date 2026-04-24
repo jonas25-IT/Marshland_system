@@ -42,6 +42,7 @@ public class FileController {
                 System.out.println("File not found or not readable: " + filePath);
                 // Return fallback image using Unsplash
                 String fallbackUrl = "https://source.unsplash.com/400x400/?nature,wildlife,species," + decodedFilename.replaceAll("[^a-zA-Z0-9]", "");
+                System.out.println("Redirecting to fallback image: " + fallbackUrl);
                 return ResponseEntity.status(302).header("Location", fallbackUrl).build();
             }
         } catch (MalformedURLException e) {
