@@ -209,11 +209,30 @@ public class AdminController {
     @PostMapping("/bookings/{bookingId}/approve")
     public ResponseEntity<?> approveBooking(@PathVariable Long bookingId, Authentication authentication) {
         try {
+            System.out.println(">>> APPROVAL REQUEST: bookingId=" + bookingId + ", admin=" + authentication.getName());
             User admin = (User) authentication.getPrincipal();
-            bookingService.approveBooking(bookingId, admin);
-            return ResponseEntity.ok(Map.of("message", "Booking approved successfully"));
+            Booking result = bookingService.approveBooking(bookingId, admin);
+            return ResponseEntity.ok(Map.of(
+                "message", "Booking approved successfully",
+                "bookingId", result.getBookingId(),
+                "status", result.getBookingStatus().toString(),
+                "approvedBy", admin.getEmail()
+            ));
+        } catch (RuntimeException e) {
+            System.err.println(">>> BOOKING APPROVAL ERROR: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", e.getMessage(),
+                "bookingId", bookingId,
+                "timestamp", System.currentTimeMillis()
+            ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            System.err.println(">>> UNEXPECTED BOOKING APPROVAL ERROR: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Unexpected error during booking approval: " + e.getMessage(),
+                "bookingId", bookingId
+            ));
         }
     }
     
