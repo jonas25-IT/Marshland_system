@@ -94,7 +94,7 @@ const StaffDashboard = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard title="Assigned Tasks" value={dashboardData?.pendingTasks} change="-2" icon={AlertTriangle} color="text-orange-400" />
-              <StatCard title="Daily Bookings" value={dashboardData?.todayBookings} change="+15%" icon={Calendar} color="text-blue-400" />
+              <StatCard title="Daily Bookings" value={typeof dashboardData?.todayBookings === 'number' ? dashboardData?.todayBookings : todayBookings.length} change="+15%" icon={Calendar} color="text-blue-400" />
               <StatCard title="Inquiries" value={dashboardData?.messages} change="+1" icon={MessageSquare} color="text-emerald-400" />
               <StatCard title="System Health" value="98%" change="Optimal" icon={Shield} color="text-purple-400" />
             </div>
