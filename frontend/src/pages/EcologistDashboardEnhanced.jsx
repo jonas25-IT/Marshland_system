@@ -538,7 +538,7 @@ const EcologistDashboardEnhanced = () => {
           </div>
         )}
 
-        {activeTab === 'map' && (
+        {activeTab === 'mapping' && (
           <div className="p-8 animate-in fade-in duration-500">
             <h1 className="text-4xl font-black text-white tracking-tight mb-2">Ecosystem Mapping</h1>
             <p className="text-gray-500 font-light italic mb-10">Geographic distribution and habitat mapping of species at Rugezi Marshland.</p>
