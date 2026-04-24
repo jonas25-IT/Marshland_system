@@ -436,6 +436,9 @@ const EcologistDashboardEnhanced = () => {
                           </div>
                         </td>
                         <td className="p-4">
+                          <span className="text-sm text-gray-400 italic">{s.scientificName}</span>
+                        </td>
+                        <td className="p-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                             s.type === 'FLORA' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'
                           }`}>
