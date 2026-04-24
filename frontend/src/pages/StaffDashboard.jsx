@@ -24,6 +24,7 @@ const StaffDashboard = () => {
   const [activityLogs, setActivityLogs] = useState([]);
   const [showTourAssistModal, setShowTourAssistModal] = useState(false);
   const [showIncidentReportModal, setShowIncidentReportModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   
   const loadData = useCallback(async () => {
     try {
@@ -100,6 +101,10 @@ const StaffDashboard = () => {
 
   const handleIncidentReport = () => {
     setShowIncidentReportModal(true);
+  };
+
+  const handleBookingClick = (booking) => {
+    setSelectedBooking(booking);
   };
 
   if (loading && !dashboardData) return (
@@ -271,7 +276,11 @@ const StaffDashboard = () => {
                       <td colSpan="4" className="p-20 text-center text-gray-600 italic font-light">No visitor fragments synchronized for this cycle.</td>
                     </tr>
                   ) : todayBookings.map(b => (
-                    <tr key={b.bookingId} className="hover:bg-white/[0.02] transition-colors group">
+                    <tr 
+                      key={b.bookingId} 
+                      className="hover:bg-white/[0.02] transition-colors group cursor-pointer"
+                      onClick={() => handleBookingClick(b)}
+                    >
                       <td className="p-6">
                         <div className="flex items-center gap-4">
                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-white/5 flex items-center justify-center font-black text-[10px] text-purple-400 uppercase tracking-tighter">
@@ -423,6 +432,131 @@ const StaffDashboard = () => {
 
         {activeTab === 'profile' && <Profile />}
         {activeTab === 'settings' && <Settings />}
+
+        {/* Booking Detail Modal */}
+        {selectedBooking && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card-premium max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-8 border-b border-white/5 flex justify-between items-center">
+                <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                  <Calendar className="w-6 h-6 text-blue-400" />
+                  Booking Details
+                </h2>
+                <button 
+                  onClick={() => setSelectedBooking(null)}
+                  className="text-gray-500 hover:text-white transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                {/* Visitor Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-300 mb-3">Visitor Information</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Name:</span>
+                        <span className="text-gray-200 font-medium">
+                          {selectedBooking.user?.firstName} {selectedBooking.user?.lastName}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Email:</span>
+                        <span className="text-gray-200 font-medium">
+                          {selectedBooking.user?.email}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Phone:</span>
+                        <span className="text-gray-200 font-medium">
+                          {selectedBooking.user?.phone || 'Not provided'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-300 mb-3">Booking Information</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Booking ID:</span>
+                        <span className="text-gray-200 font-medium">#{selectedBooking.bookingId}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Visit Date:</span>
+                        <span className="text-gray-200 font-medium">
+                          {selectedBooking.visitDate?.visitDate ? new Date(selectedBooking.visitDate.visitDate).toLocaleDateString() : 'Not set'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Number of Visitors:</span>
+                        <span className="text-gray-200 font-medium">{selectedBooking.numberOfVisitors}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Status:</span>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          selectedBooking.bookingStatus === 'PENDING' ? 'bg-orange-500/10 text-orange-400' :
+                          selectedBooking.bookingStatus === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-400' :
+                          selectedBooking.bookingStatus === 'CHECKED_IN' ? 'bg-blue-500/10 text-blue-400' :
+                          selectedBooking.bookingStatus === 'REJECTED' ? 'bg-red-500/10 text-red-400' :
+                          'bg-gray-500/10 text-gray-400'
+                        }`}>
+                          {selectedBooking.bookingStatus}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Created:</span>
+                        <span className="text-gray-200 font-medium">
+                          {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleDateString() : 'Not set'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Special Requests */}
+                {selectedBooking.specialRequests && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-300 mb-3">Special Requests</h3>
+                    <p className="text-gray-200 bg-white/5 p-4 rounded-lg border border-white/10">
+                      {selectedBooking.specialRequests}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-6 border-t border-white/5">
+                  {selectedBooking.bookingStatus === 'PENDING' && (
+                    <>
+                      <button 
+                        onClick={() => handleApprove(selectedBooking.bookingId)}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 px-6 rounded-xl font-semibold transition-all active:scale-95"
+                      >
+                        Approve Booking
+                      </button>
+                      <button 
+                        onClick={() => handleReject(selectedBooking.bookingId)}
+                        className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3 px-6 rounded-xl font-semibold transition-all active:scale-95"
+                      >
+                        Reject Booking
+                      </button>
+                    </>
+                  )}
+                  {selectedBooking.bookingStatus !== 'CHECKED_IN' && selectedBooking.bookingStatus !== 'PENDING' && (
+                    <button 
+                      onClick={() => setSelectedBooking(null)}
+                      className="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-black py-3 px-6 rounded-xl font-semibold transition-all active:scale-95"
+                    >
+                      Close
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tour Assist Modal */}
         {showTourAssistModal && (
