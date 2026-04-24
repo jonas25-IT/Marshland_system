@@ -156,7 +156,8 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
 
       console.log('Photo payload:', photoPayload);
 
-      const response = editingPhoto ? await api.put(`/gallery/photos/${editingPhoto.photo_id}`, photoPayload) : await api.post('/gallery/photos', photoPayload);
+      const photoId = editingPhoto?.photo_id || editingPhoto?.photoId;
+      const response = editingPhoto && photoId ? await api.put(`/gallery/photos/${photoId}`, photoPayload) : await api.post('/gallery/photos', photoPayload);
       if (editingPhoto) {
         toast.success('Capture synchronized');
       } else {
@@ -175,10 +176,15 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (photo) => {
+    const photoId = photo?.photo_id || photo?.photoId;
+    if (!photoId) {
+      toast.error('Invalid photo ID');
+      return;
+    }
     if (window.confirm('Erase this capture from global sync?')) {
       try {
-        await api.delete(`/gallery/photos/${id}`);
+        await api.delete(`/gallery/photos/${photoId}`);
         toast.success('Photo removed');
         loadPhotos();
       } catch (error) { toast.error('Erase failed'); }
@@ -271,7 +277,7 @@ const GalleryManagement = ({ allowedRoles = ['ADMIN', 'ECOLOGIST', 'STAFF'] }) =
                            <Edit className="w-3 h-3" />
                         </button>
                         <button 
-                          onClick={() => handleDelete(photo.photo_id || photo.photoId)}
+                          onClick={() => handleDelete(photo)}
                           className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-500 transition-colors"
                         >
                            <Trash2 className="w-3 h-3" />
