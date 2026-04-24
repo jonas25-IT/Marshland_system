@@ -142,10 +142,11 @@ const TouristDashboard = () => {
     const formData = new FormData(e.target);
 
     try {
+      const visitType = formData.get('visitType');
       const bookingData = {
         visitDate: formData.get('visitDate'),
         numberOfVisitors: parseInt(formData.get('numberOfVisitors')),
-        visitType: typeof selectedTour === 'object' ? selectedTour.title : selectedTour || 'Nature Walk'
+        visitType: visitType && visitType !== 'undefined' ? visitType : 'Nature Walk'
       };
 
       await api.post('/booking/new', bookingData);
@@ -443,7 +444,7 @@ const TouristDashboard = () => {
                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Visit Type</label>
                 <select
                   name="visitType"
-                  defaultValue={selectedTour || 'Nature Walk'}
+                  defaultValue={selectedTour?.title || selectedTour || 'Nature Walk'}
                   className="w-full bg-[#16171D] border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-sm appearance-none"
                 >
                   <option value="Nature Walk">Nature Walk</option>
