@@ -43,7 +43,6 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
     
-    @Transactional
     public Booking approveBooking(Long bookingId, User admin) {
         System.out.println(">>> Approving booking ID: " + bookingId);
         try {
@@ -64,15 +63,20 @@ public class BookingService {
             Booking savedBooking = bookingRepository.save(booking);
             System.out.println(">>> Booking approved successfully with ID: " + savedBooking.getBookingId());
 
-            // Track booking approval
-            systemActivityService.trackBookingDecision(
-                savedBooking.getBookingId().toString(),
-                "Booking #" + savedBooking.getBookingId(),
-                admin.getEmail(),
-                admin.getRole().toString(),
-                "APPROVE",
-                "Booking approved by admin"
-            );
+            // Track booking approval (non-critical - don't let it fail the main operation)
+            try {
+                systemActivityService.trackBookingDecision(
+                    savedBooking.getBookingId().toString(),
+                    "Booking #" + savedBooking.getBookingId(),
+                    admin.getEmail(),
+                    admin.getRole().toString(),
+                    "APPROVE",
+                    "Booking approved by admin"
+                );
+            } catch (Exception activityError) {
+                System.err.println(">>> Failed to track booking approval activity: " + activityError.getMessage());
+                // Don't rethrow - activity logging shouldn't fail the booking approval
+            }
 
             return savedBooking;
         } catch (Exception e) {
