@@ -72,6 +72,28 @@ const StaffDashboard = () => {
     toast.success('Navigated to Today\'s Dispatch for check-in');
   };
 
+  const handleApprove = async (id) => {
+    try {
+      await api.post(`/staff/bookings/${id}/approve`);
+      toast.success('Booking approved successfully');
+      loadData();
+    } catch (e) {
+      console.error('Approval failed:', e);
+      toast.error('Failed to approve booking: ' + (e.response?.data?.error || 'Unknown error'));
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await api.post(`/staff/bookings/${id}/reject`);
+      toast.success('Booking rejected successfully');
+      loadData();
+    } catch (e) {
+      console.error('Rejection failed:', e);
+      toast.error('Failed to reject booking: ' + (e.response?.data?.error || 'Unknown error'));
+    }
+  };
+
   const handleTourAssist = () => {
     setShowTourAssistModal(true);
   };
@@ -286,8 +308,19 @@ const StaffDashboard = () => {
                             Authorize Arrival
                           </button>
                         ) : (
-                          <div className="flex items-center justify-end gap-2 text-emerald-500/60 font-bold text-[10px] uppercase tracking-widest">
-                             <CheckCircle className="w-4 h-4" /> Arrival Verified
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => handleApprove(b.bookingId)}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 px-4 rounded-lg text-sm font-semibold transition-all"
+                            >
+                              Approve
+                            </button>
+                            <button 
+                              onClick={() => handleReject(b.bookingId)}
+                              className="bg-red-600 hover:bg-red-500 text-white font-black py-2 px-4 rounded-lg text-sm font-semibold transition-all"
+                            >
+                              Reject
+                            </button>
                           </div>
                         )}
                       </td>
