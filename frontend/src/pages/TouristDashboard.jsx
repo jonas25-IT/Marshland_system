@@ -334,6 +334,7 @@ const TouristDashboard = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
                     <p className="text-xs font-bold text-white uppercase tracking-wider">{p?.title || "Scientific Capture"}</p>
                     <p className="text-[10px] text-purple-400 font-medium">{p?.category || "Field Observation"}</p>
+                    <p className="text-[10px] text-gray-300 font-light line-clamp-2 mt-1">{p?.description || "Captured in the marshland ecosystem"}</p>
                   </div>
                 </div>
               );
