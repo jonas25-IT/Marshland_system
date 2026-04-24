@@ -43,7 +43,7 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
     
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional
     public Booking approveBooking(Long bookingId, User admin) {
         System.out.println(">>> Approving booking ID: " + bookingId);
         try {
@@ -55,15 +55,14 @@ public class BookingService {
                 throw new RuntimeException("Booking is not in pending status");
             }
 
-            // Use native SQL query to update status directly
-            System.out.println(">>> Using native query to update booking status...");
-            int updated = bookingRepository.updateBookingStatusToApprovedNative(bookingId, LocalDateTime.now());
-            System.out.println(">>> Updated " + updated + " row(s)");
-
-            // Refresh the booking to get the updated state
-            bookingRepository.flush();
-            Booking savedBooking = bookingRepository.findById(bookingId).get();
-            System.out.println(">>> Booking approved successfully");
+            // Use standard JPA approach to update booking
+            System.out.println(">>> Updating booking status using JPA...");
+            booking.setBookingStatus(BookingStatus.APPROVED);
+            booking.setApprovedBy(admin);
+            booking.setApprovalDate(LocalDateTime.now());
+            
+            Booking savedBooking = bookingRepository.save(booking);
+            System.out.println(">>> Booking approved successfully with ID: " + savedBooking.getBookingId());
 
             // Track booking approval
             systemActivityService.trackBookingDecision(
