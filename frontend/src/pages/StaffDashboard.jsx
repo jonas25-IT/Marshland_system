@@ -6,7 +6,7 @@ import {
   Users, Calendar, CheckCircle, MessageSquare, AlertTriangle,
   Clock, MapPin, Search, Filter, Edit, Trash2, Plus,
   Activity, Bell, Compass, FileText, Check, X, RefreshCw,
-  Mail, Phone
+  Mail, Phone, Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Settings from '../components/Settings';
