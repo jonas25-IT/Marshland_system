@@ -40,7 +40,9 @@ public class FileController {
                         .body(resource);
             } else {
                 System.out.println("File not found or not readable: " + filePath);
-                return ResponseEntity.notFound().build();
+                // Return fallback image using Unsplash
+                String fallbackUrl = "https://source.unsplash.com/400x400/?nature,wildlife,species," + decodedFilename.replaceAll("[^a-zA-Z0-9]", "");
+                return ResponseEntity.status(302).header("Location", fallbackUrl).build();
             }
         } catch (MalformedURLException e) {
             System.err.println("Malformed URL for file: " + e.getMessage());
