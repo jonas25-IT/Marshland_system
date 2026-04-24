@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.time.LocalDate;
 
 @RestController
@@ -245,16 +246,22 @@ public class AdminController {
             
             // Check if booking exists
             try {
-                Booking booking = bookingService.findById(bookingId);
-                debugInfo.put("exists", true);
-                debugInfo.put("bookingId", booking.getBookingId());
-                debugInfo.put("status", booking.getBookingStatus().toString());
-                debugInfo.put("userEmail", booking.getUser().getEmail());
-                debugInfo.put("visitDate", booking.getVisitDate().getVisitDate().toString());
-                debugInfo.put("numberOfVisitors", booking.getNumberOfVisitors());
-                debugInfo.put("createdAt", booking.getCreatedAt().toString());
-                debugInfo.put("approvedBy", booking.getApprovedBy() != null ? booking.getApprovedBy().getEmail() : null);
-                debugInfo.put("approvalDate", booking.getApprovalDate() != null ? booking.getApprovalDate().toString() : null);
+                Optional<Booking> bookingOpt = bookingService.findById(bookingId);
+                if (bookingOpt.isPresent()) {
+                    Booking booking = bookingOpt.get();
+                    debugInfo.put("exists", true);
+                    debugInfo.put("bookingId", booking.getBookingId());
+                    debugInfo.put("status", booking.getBookingStatus().toString());
+                    debugInfo.put("userEmail", booking.getUser().getEmail());
+                    debugInfo.put("visitDate", booking.getVisitDate().getVisitDate().toString());
+                    debugInfo.put("numberOfVisitors", booking.getNumberOfVisitors());
+                    debugInfo.put("createdAt", booking.getCreatedAt().toString());
+                    debugInfo.put("approvedBy", booking.getApprovedBy() != null ? booking.getApprovedBy().getEmail() : null);
+                    debugInfo.put("approvalDate", booking.getApprovalDate() != null ? booking.getApprovalDate().toString() : null);
+                } else {
+                    debugInfo.put("exists", false);
+                    debugInfo.put("error", "Booking not found");
+                }
             } catch (Exception e) {
                 debugInfo.put("exists", false);
                 debugInfo.put("error", e.getMessage());
