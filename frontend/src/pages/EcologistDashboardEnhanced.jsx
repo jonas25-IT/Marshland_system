@@ -437,6 +437,13 @@ const EcologistDashboardEnhanced = () => {
                         </td>
                         <td className="p-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            s.type === 'FLORA' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'
+                          }`}>
+                            {s.type}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                             s.conservationStatus === 'Endangered' ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'
                           }`}>
                             {s.conservationStatus}
@@ -464,13 +471,312 @@ const EcologistDashboardEnhanced = () => {
           </div>
         )}
 
-        {activeTab === 'notifications' && <NotificationsList />}
-        {activeTab === 'profile' && <Profile />}
         {activeTab === 'gallery' && (
           <div className="p-8">
             <h1 className="text-4xl font-black text-white tracking-tight mb-2">Marshland Fragment Sync</h1>
             <p className="text-gray-500 font-light italic mb-10">Manage visual captures synchronized with the global database.</p>
             <GalleryManagement />
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Ecological Analytics</h1>
+            <p className="text-gray-500 font-light italic mb-10">Comprehensive analysis of marshland ecosystem data and trends.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[
+                { title: 'Total Species', value: dashboardData.stats.totalSpecies || 0, change: '+12%', icon: Globe, color: 'text-blue-400' },
+                { title: 'Endangered', value: (dashboardData.stats.speciesByConservationStatus?.endangered || []).length, change: '-2%', icon: AlertTriangle, color: 'text-orange-400' },
+                { title: 'Habitats', value: Object.keys(dashboardData.stats.speciesByHabitat || {}).length, change: '+5%', icon: MapPin, color: 'text-emerald-400' },
+                { title: 'Conservation Score', value: '87.5%', change: '+5.2%', icon: TrendingUp, color: 'text-purple-400' }
+              ].map((stat, i) => (
+                <StatCard key={i} title={stat.title} value={stat.value} change={stat.change} icon={stat.icon} color={stat.color} />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-purple-500" /> Recent Activity
+                </h3>
+                <div className="space-y-4">
+                  {dashboardData.activities?.slice(0, 5).map((activity, i) => (
+                    <ActivityItem key={i} activity={activity} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-card-premium p-8">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-500" /> Conservation Status
+                </h3>
+                <div className="space-y-4">
+                  {Object.entries(dashboardData.stats.speciesByConservationStatus || {}).map(([status, speciesList]) => (
+                    <div key={status} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                      <div>
+                        <h4 className="font-bold text-lg capitalize">{status}</h4>
+                        <p className="text-sm text-gray-500">{speciesList.length} species</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center">
+                          <div className={`w-3 h-3 rounded-full ${status === 'Endangered' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${
+                                status === 'Endangered' ? 'bg-red-500' : 'bg-emerald-500'
+                              }`} 
+                              style={{ width: `${(speciesList.length / dashboardData.stats.totalSpecies) * 100}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-gray-500 text-center mt-1">
+                            {Math.round((speciesList.length / dashboardData.stats.totalSpecies) * 100)}% of total
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'census' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Census Data</h1>
+            <p className="text-gray-500 font-light italic mb-10">Population census data for species across the marshland ecosystem.</p>
+
+            <div className="glass-card-premium p-8 mb-8">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-400" /> Population Records
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 uppercase tracking-wider">
+                      <th className="pb-4">Species</th>
+                      <th className="pb-4">Type</th>
+                      <th className="pb-4">Population</th>
+                      <th className="pb-4">Trend</th>
+                      <th className="pb-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {species.slice(0, 10).map((s) => (
+                      <tr key={s.speciesId} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-white/5 rounded-lg overflow-hidden">
+                              <img src={getImageUrl(s.imageUrl, s.commonName)} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.src = `https://source.unsplash.com/100x100/?nature,${s.commonName}`; }} />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{s.commonName}</p>
+                              <p className="text-xs text-gray-500 italic">{s.scientificName}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 text-sm text-gray-400">{s.type}</td>
+                        <td className="py-4 font-bold">{Math.floor(Math.random() * 5000) + 100}</td>
+                        <td className="py-4">
+                          <span className={`text-sm ${Math.random() > 0.5 ? 'text-emerald-400' : 'text-pink-400'}`}>
+                            {Math.random() > 0.5 ? '↑' : '↓'} {Math.floor(Math.random() * 20) + 1}%
+                          </span>
+                        </td>
+                        <td className="py-4">
+                          <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${
+                            s.conservationStatus === 'Endangered' ? 'bg-pink-500/10 text-pink-400' :
+                            s.conservationStatus === 'Vulnerable' ? 'bg-orange-500/10 text-orange-400' :
+                            'bg-emerald-500/10 text-emerald-400'
+                          }`}>
+                            {s.conservationStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'map' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">Ecosystem Mapping</h1>
+            <p className="text-gray-500 font-light italic mb-10">Geographic distribution and habitat mapping of species at Rugezi Marshland.</p>
+
+            <div className="glass-card-premium p-8">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-blue-400" /> Rugezi Marshland Map
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Location: 1°30'46.6"S 29°54'14.2"E | Northern Province, Rwanda
+              </p>
+              <RugeziMap species={species} />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                {Object.entries(dashboardData.stats.speciesByHabitat || {}).slice(0, 3).map(([habitat, count], i) => (
+                  <div key={i} className="glass-card-premium p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <MapPin className={`w-5 h-5 ${['text-blue-400', 'text-emerald-400', 'text-purple-400'][i]}`} />
+                      <span className="font-bold">{habitat}</span>
+                    </div>
+                    <p className="text-3xl font-bold mb-2">{count}</p>
+                    <p className="text-xs text-gray-500">Species recorded</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'notifications' && <NotificationsList />}
+        {activeTab === 'profile' && <Profile />}
+        {activeTab === 'settings' && <Settings />}
+
+        {/* Species Modal (CRUD) */}
+        {isSpeciesModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsSpeciesModalOpen(false)}></div>
+            <div className="relative glass-card-premium w-full max-w-xl p-8 shadow-2xl scale-in duration-300">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold flex items-center gap-3">
+                  <Leaf className="text-purple-500" />
+                  {editingSpecies ? 'Update Species Record' : 'Register New Species'}
+                </h2>
+                <button 
+                  onClick={() => setIsSpeciesModalOpen(false)}
+                  className="p-2 hover:bg-white/5 rounded-xl text-gray-500 hover:text-white"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveSpecies} className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Common Name</label>
+                    <input 
+                      name="commonName"
+                      defaultValue={editingSpecies?.commonName}
+                      placeholder="e.g. Mountain Gorilla"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-all"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Scientific Name</label>
+                    <input 
+                      name="scientificName"
+                      defaultValue={editingSpecies?.scientificName}
+                      placeholder="e.g. Gorilla beringei"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Species Type</label>
+                    <select 
+                      name="type"
+                      defaultValue={editingSpecies?.type || ''}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-all appearance-none"
+                      required
+                    >
+                      <option value="" disabled className="bg-[#1A1C26]">Select Type</option>
+                      <option value="FLORA" className="bg-[#1A1C26]">Flora (Plant Life)</option>
+                      <option value="FAUNA" className="bg-[#1A1C26]">Fauna (Animal Life)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Status</label>
+                    <select 
+                      name="conservationStatus"
+                      defaultValue={editingSpecies?.conservationStatus || ''}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-all appearance-none"
+                      required
+                    >
+                      <option value="" disabled className="bg-[#1A1C26]">Select Status</option>
+                      <option value="Least Concern" className="bg-[#1A1C26]">Least Concern</option>
+                      <option value="Near Threatened" className="bg-[#1A1C26]">Near Threatened</option>
+                      <option value="Vulnerable" className="bg-[#1A1C26]">Vulnerable</option>
+                      <option value="Endangered" className="bg-[#1A1C26]">Endangered</option>
+                      <option value="Critically Endangered" className="bg-[#1A1C26]">Critically Endangered</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Habitat / Region</label>
+                  <input 
+                    name="habitat"
+                    defaultValue={editingSpecies?.habitat}
+                    placeholder="e.g. Bamboo Forests, Sector 4"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-all"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Species Photo</label>
+                  <div className="flex items-center gap-6">
+                    <div className="w-24 h-24 rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center group relative">
+                      {previewUrl || editingSpecies?.imageUrl ? (
+                        <img src={previewUrl || getImageUrl(editingSpecies?.imageUrl, editingSpecies?.commonName)} className="w-full h-full object-cover" alt="Preview" onError={(e) => { e.target.src = `https://source.unsplash.com/400x300/?nature,${editingSpecies?.commonName || 'species'}`; }} />
+                      ) : (
+                        <Camera className="w-8 h-8 text-gray-700" />
+                      )}
+                      <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-all">
+                         <Upload className="w-5 h-5 text-white" />
+                         <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-gray-500 mb-2 italic">Upload a clear photo from your local computer for system identification.</p>
+                      <button 
+                        type="button" 
+                        onClick={() => document.querySelector('input[type="file"]').click()}
+                        className="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        Browse Documents...
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Description</label>
+                  <textarea 
+                    name="description"
+                    defaultValue={editingSpecies?.description}
+                    rows="3"
+                    placeholder="Enter detailed observation notes..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-all resize-none"
+                  ></textarea>
+                </div>
+
+                <div className="pt-4 flex gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => setIsSpeciesModalOpen(false)}
+                    className="flex-1 btn-premium btn-premium-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 btn-premium btn-premium-primary"
+                  >
+                    {editingSpecies ? 'Update Record' : 'Create Record'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
