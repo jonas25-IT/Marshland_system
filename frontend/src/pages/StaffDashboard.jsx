@@ -92,11 +92,11 @@ const StaffDashboard = () => {
         
         {activeTab === 'dashboard' && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard title="Assigned Tasks" value={dashboardData?.pendingTasks} change="-2" icon={AlertTriangle} color="text-orange-400" />
               <StatCard title="Daily Bookings" value={dashboardData?.todayBookings} change="+15%" icon={Calendar} color="text-blue-400" />
               <StatCard title="Inquiries" value={dashboardData?.messages} change="+1" icon={MessageSquare} color="text-emerald-400" />
-              <StatCard title="Footfall Today" value={dashboardData?.todayVisitors} change="+8%" icon={Users} color="text-purple-400" />
+              <StatCard title="System Health" value="98%" change="Optimal" icon={Shield} color="text-purple-400" />
             </div>
 
             {/* Capacity Awareness */}
@@ -156,7 +156,7 @@ const StaffDashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mt-12">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-10 mt-8 lg:mt-12">
               <div className="glass-card-premium p-8">
                 <div className="flex justify-between items-center mb-8">
                   <h3 className="text-xl font-bold flex items-center gap-2">

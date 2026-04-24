@@ -578,14 +578,14 @@ const AdminDashboard = () => {
         {/* Main Dashboard Overview */}
         {activeTab === 'dashboard' && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard title={t.totalUsers} value={dashboardData?.totalUsers || 0} change="+12%" icon={Users} color="text-purple-400" />
               <StatCard title={t.bookings} value={dashboardData?.totalBookings || 0} change="+5%" icon={Calendar} color="text-blue-400" />
               <StatCard title={t.species} value={dashboardData?.totalSpecies || 0} change="+2%" icon={Leaf} color="text-emerald-400" />
               <StatCard title={t.pendingApprovals} value={dashboardData?.pendingBookings || 0} change="-4%" icon={AlertTriangle} color="text-orange-400" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mt-12">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-10 mt-8 lg:mt-12">
               <div className="glass-card-premium p-8">
                 <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-purple-500" /> {t.recentActivity}

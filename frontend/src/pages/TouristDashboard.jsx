@@ -181,16 +181,16 @@ const TouristDashboard = () => {
         
         {activeTab === 'dashboard' && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <StatCard title={t.myVisits} value={dashboardData?.totalBookings} change={t.history} icon={Calendar} color="text-purple-400" />
               <StatCard title={t.upcoming} value={dashboardData?.upcomingBookings} change={t.nextMonth} icon={Clock} color="text-blue-400" />
               <StatCard title={t.ecoPoints} value={1250} change="+250" icon={Star} color="text-emerald-400" />
               <StatCard title={t.saved} value={5} change={t.locations} icon={Heart} color="text-pink-400" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-12">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-10 mt-8 lg:mt-12">
                {/* My Bookings List */}
-              <div className="lg:col-span-2 glass-card-premium p-8">
+              <div className="xl:col-span-2 glass-card-premium p-6 lg:p-8">
                 <div className="flex justify-between items-center mb-8">
                   <h3 className="text-xl font-bold">{t.myReservations}</h3>
                   <button onClick={() => setShowBookingModal(true)} className="btn-premium btn-premium-primary text-xs !py-2">{t.bookNewVisit}</button>
@@ -273,7 +273,7 @@ const TouristDashboard = () => {
 
         {/* Gallery / Tours Browse */}
         {activeTab === 'tours' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
              {(tours && tours.length > 0 ? tours : [
                { tourId: 1, title: 'Bird Watching', description: 'Guided tour through the north marshes.', price: 25, category: 'Wildlife', durationHours: 3, imageUrl: null },
                { tourId: 2, title: 'Photography Safari', description: 'Private access to sunrise locations.', price: 45, category: 'Photography', durationHours: 4, imageUrl: null },
@@ -302,7 +302,7 @@ const TouristDashboard = () => {
         )}
 
         {activeTab === 'gallery' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {(galleryPhotos && galleryPhotos.length > 0 ? galleryPhotos : [...Array(8)]).map((p, i) => {
               const imageUrl = p?.image_url || p?.imageUrl;
               let fullImageUrl;
