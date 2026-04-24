@@ -104,10 +104,10 @@ const DashboardLayout = ({ children, activeTab, onTabChange }) => {
 
   return (
     <div className="min-h-screen flex dashboard-bg font-sans transition-colors duration-300">
-      {/* Mobile Overlay */}
+      {/* Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-30"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -205,10 +205,11 @@ const DashboardLayout = ({ children, activeTab, onTabChange }) => {
       <main className={`flex-1 transition-all duration-300 ease-in-out min-h-screen ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'} ml-0 p-4 lg:p-8`}>
         {/* Top Header */}
         <header className="flex justify-between items-center mb-6 lg:mb-10">
-          {/* Mobile Menu Button */}
+          {/* Menu Button - Available to all users */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="lg:hidden p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+            className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+            title="Toggle Sidebar"
           >
             <Menu className="w-5 h-5 text-gray-400" />
           </button>
